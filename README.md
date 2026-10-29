@@ -1,5 +1,9 @@
 <div align="center">
 
+> English UI fork: see [FORK.md](FORK.md) for current coverage, local builds,
+> manual updates, and upstream maintenance. The inherited installation and
+> self-update instructions below describe upstream, not this fork.
+
 # ARTEX
 
 AI 自主渗透测试系统（Go 后端 + Next.js 前端）

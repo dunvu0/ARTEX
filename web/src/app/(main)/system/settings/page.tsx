@@ -27,7 +27,7 @@ import type { EgressReport, LLMProfile, Settings, WorkerPool } from "@/lib/types
 
 import { useEgressIp } from "../../_components/egress-ip-banner";
 import { BasicAuthCard } from "./_components/basic-auth-card";
-import { UpdateCard } from "./_components/update-card";
+import { UpdateCard } from "./_components/manual-update-card";
 
 export default function SystemSettingsPage() {
   const [credentialAgent, setCredentialAgent] = React.useState(false);

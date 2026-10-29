@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 
 import { X } from "lucide-react";
 
@@ -92,7 +93,7 @@ export function TimeSelect({
   value,
   onValueChange,
   optional = false,
-  placeholder = "选择时间",
+  placeholder,
   "aria-label": ariaLabel,
 }: {
   value?: string;
@@ -101,19 +102,20 @@ export function TimeSelect({
   placeholder?: string;
   "aria-label"?: string;
 }) {
+  const t = useTranslations("time");
   const selected = splitTime(value);
   const hasValue = Boolean(selected.hour && selected.minute);
   const updateHour = (hour: string) => onValueChange(`${hour}:${selected.minute ?? "00"}`);
   const updateMinute = (minute: string) => onValueChange(`${selected.hour ?? "00"}:${minute}`);
 
   return (
-    <div className="flex min-w-0 items-center gap-1" title={optional && !hasValue ? placeholder : undefined}>
+    <div className="flex min-w-0 items-center gap-1" title={optional && !hasValue ? (placeholder ?? t("select")) : undefined}>
       <TimePart
         value={selected.hour}
         items={hours}
         max={23}
-        placeholder="小时"
-        ariaLabel={ariaLabel ? `${ariaLabel} 小时` : "小时"}
+        placeholder={t("hour")}
+        ariaLabel={ariaLabel ? `${ariaLabel} ${t("hour")}` : t("hour")}
         onValueChange={updateHour}
       />
       <span className="font-medium text-muted-foreground">:</span>
@@ -121,8 +123,8 @@ export function TimeSelect({
         value={selected.minute}
         items={minutes}
         max={59}
-        placeholder="分钟"
-        ariaLabel={ariaLabel ? `${ariaLabel} 分钟` : "分钟"}
+        placeholder={t("minute")}
+        ariaLabel={ariaLabel ? `${ariaLabel} ${t("minute")}` : t("minute")}
         onValueChange={updateMinute}
       />
       {optional && hasValue && (
@@ -132,8 +134,8 @@ export function TimeSelect({
           size="icon-sm"
           className="shrink-0"
           onClick={() => onValueChange("")}
-          aria-label="清除结束时间"
-          title="不设置结束时间"
+          aria-label={t("clearEnd")}
+          title={t("noEnd")}
         >
           <X />
         </Button>
