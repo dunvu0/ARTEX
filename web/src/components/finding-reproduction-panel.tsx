@@ -82,6 +82,15 @@ function packetText(detail: FindingTrafficDetail, side: "request" | "response") 
   return [head, body].filter(Boolean).join("\n\n").trim();
 }
 
+function packetCapturedAt(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") return "未知";
+  const numeric = typeof value === "number" ? value : Number(value);
+  const date = Number.isFinite(numeric)
+    ? new Date(numeric < 10_000_000_000 ? numeric * 1000 : numeric)
+    : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? "未知" : date.toLocaleString("zh-CN");
+}
+
 function PacketDisclosure({
   findingId,
   bindingId,
@@ -185,6 +194,7 @@ function PacketDisclosure({
                 <Badge variant="secondary">{detail.binding.snapshot.method}</Badge>
                 <Badge variant="outline">{detail.binding.snapshot.status}</Badge>
                 <span className="break-all text-muted-foreground">{detail.binding.snapshot.url}</span>
+                <span className="shrink-0 text-muted-foreground">采集时间：{packetCapturedAt(detail.binding.snapshot.captured_at)}</span>
               </div>
               <div>
                 <p className="mb-1 text-[11px] text-muted-foreground">请求 Request</p>
