@@ -185,7 +185,7 @@ export function HttpPacketSyntax({
           className={cn("grid min-w-0", lineClassName, lineNumbers && "grid-cols-[2.25rem_minmax(0,1fr)]")}
         >
           {lineNumbers ? (
-            <span className="sticky left-0 self-stretch border-r bg-muted/20 px-1 text-right text-[11px] text-muted-foreground/50">
+              <span className="sticky left-0 self-stretch select-none border-r bg-muted/20 px-1 text-right text-[11px] text-muted-foreground/50">
               {index + 1}
             </span>
           ) : null}
@@ -308,29 +308,16 @@ export function HttpCodeBlock({ raw }: { raw: string }) {
           <TooltipContent side="bottom">{copied ? "已复制" : "复制报文"}</TooltipContent>
         </Tooltip>
       </div>
-      {/* biome-ignore lint/a11y/useSemanticElements: textarea cannot preserve line numbers and syntax-highlighting markup. */}
+      {/* Keep this as a read-only document so browser text selection stays native. */}
       <div
-        role="textbox"
+        role="document"
         aria-label="HTTP 报文代码"
-        aria-multiline="true"
-        aria-readonly="true"
-        tabIndex={0}
-        className="min-h-0 max-h-[calc(100vh-15rem)] flex-1 min-w-0 overflow-auto bg-background py-2 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        className="min-h-0 max-h-[calc(100vh-15rem)] flex-1 min-w-0 cursor-text select-text overflow-auto bg-background py-2 font-mono text-xs"
         onCopy={(event) => {
           const text = selectedPacketText(event.currentTarget, value, lines);
           if (text === null) return;
           event.preventDefault();
           event.clipboardData.setData("text/plain", text);
-        }}
-        onKeyDown={(event) => {
-          if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "a") return;
-          event.preventDefault();
-          const selection = window.getSelection();
-          if (!selection) return;
-          const range = document.createRange();
-          range.selectNodeContents(event.currentTarget);
-          selection.removeAllRanges();
-          selection.addRange(range);
         }}
       >
         <PacketHighlightContext.Provider value={query}>
