@@ -182,17 +182,17 @@ export function HttpPacketSyntax({
         <div
           key={item.key}
           data-line={index + 1}
-          className={cn("grid min-w-0", lineClassName, lineNumbers && "grid-cols-[2.25rem_minmax(0,1fr)]")}
+          className={cn("relative block min-w-0", lineClassName)}
         >
           {lineNumbers ? (
-              <span className="sticky left-0 self-stretch select-none border-r bg-muted/20 px-1 text-right text-[11px] text-muted-foreground/50">
+            <span className="pointer-events-none absolute inset-y-0 left-0 z-0 w-9 select-none border-r bg-muted/20 px-1 text-right text-[11px] text-muted-foreground/50">
               {index + 1}
             </span>
           ) : null}
           <code
             className={cn(
-              "min-h-[1lh] min-w-0 [tab-size:4]",
-              lineNumbers ? "pr-14 pl-2" : "",
+              "relative z-1 block min-h-[1lh] min-w-0 [tab-size:4]",
+              lineNumbers ? "pr-14 pl-11" : "",
               wrapLines ? "break-words whitespace-pre-wrap" : "whitespace-pre",
             )}
           >
