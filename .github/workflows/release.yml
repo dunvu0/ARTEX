@@ -18,6 +18,7 @@ concurrency:
 
 jobs:
   prepare:
+    if: github.repository == 'RuoJi6/ARTEX'
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.version.outputs.tag }}

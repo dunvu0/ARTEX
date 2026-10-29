@@ -32,7 +32,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.event_name != 'release' || github.event.release.prerelease == false
+    if: github.repository == 'RuoJi6/ARTEX' && (github.event_name != 'release' || github.event.release.prerelease == false)
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:

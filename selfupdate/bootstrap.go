@@ -48,6 +48,9 @@ type State struct {
 //	② 只剩标记文件          → 说明刚换装完，累计一次尝试；连续失败够多次则回滚
 //	③ 什么都没有            → 正常启动
 func Bootstrap() (Action, State) {
+	if !Enabled {
+		return Continue, State{}
+	}
 	if os.Getenv(smokeEnv) != "" {
 		return Continue, State{}
 	}
@@ -135,6 +138,9 @@ func confirmOrRollback(p Paths, m marker) (Action, State) {
 // 由 main 在 HTTP 监听起来之后延迟调用：活过这段时间才算数，否则标记留在原地，
 // 下次启动继续累计尝试次数，直到触发回滚。
 func Settle() {
+	if !Enabled {
+		return
+	}
 	p, err := ResolvePaths()
 	if err != nil {
 		return

@@ -209,6 +209,19 @@ func (h *updateHub) subscribe() (<-chan updateProgress, func()) {
 // 的情况很常见（服务器在内网、或代理只配在浏览器上），那时点更新必然失败，
 // 不如在检查这一步就如实报错。
 func (s *Server) updateCheck(w http.ResponseWriter, r *http.Request) {
+	if !selfupdate.Enabled {
+		mode := "binary"
+		if selfupdate.InDocker() {
+			mode = "docker"
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"current": BuildVersion, "disabled": true, "has_update": false,
+			"comparable": false, "has_backup": false,
+			"repo": "dunvu0/ARTEX", "reason": selfupdate.DisabledReason,
+			"mode": mode, "os": runtime.GOOS, "arch": runtime.GOARCH,
+		})
+		return
+	}
 	current := BuildVersion
 	mode := "binary"
 	if selfupdate.InDocker() {
@@ -274,6 +287,10 @@ func (s *Server) updateCheck(w http.ResponseWriter, r *http.Request) {
 // 立刻返回 202，实际工作在后台 goroutine 上跑：整包下载可能要几分钟，
 // 挂在请求上会被反代超时掐断。进度走 /api/update/stream。
 func (s *Server) updateApply(w http.ResponseWriter, r *http.Request) {
+	if !selfupdate.Enabled {
+		writeErr(w, http.StatusForbidden, selfupdate.DisabledReason)
+		return
+	}
 	current := BuildVersion
 
 	// 走缓存：确保装上的就是用户在界面上看到并确认的那个版本。
@@ -325,6 +342,10 @@ func (s *Server) updateApply(w http.ResponseWriter, r *http.Request) {
 
 // updateRollback 主动退回上一版本（换装前备份的 artex.old）。
 func (s *Server) updateRollback(w http.ResponseWriter, r *http.Request) {
+	if !selfupdate.Enabled {
+		writeErr(w, http.StatusForbidden, selfupdate.DisabledReason)
+		return
+	}
 	if _, running := updHub.snapshot(); running {
 		writeErr(w, 409, "更新正在进行中，无法回滚")
 		return

@@ -15,7 +15,8 @@ services:
     restart: unless-stopped
 
   artex:
-    image: ${ARTEX_IMAGE:-ruoji6/artex}:${ARTEX_TAG:-latest}
+    image: ${ARTEX_IMAGE:-artex-english}:${ARTEX_TAG:-local}
+    pull_policy: never
     depends_on:
       postgres:
         condition: service_healthy
