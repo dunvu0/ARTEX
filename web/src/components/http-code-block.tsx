@@ -193,7 +193,7 @@ export function HttpPacketSyntax({
             className={cn(
               "min-h-[1lh] min-w-0 [tab-size:4]",
               lineNumbers ? "pr-14 pl-2" : "",
-              wrapLines ? "break-words whitespace-pre-wrap" : "whitespace-pre",
+              wrapLines ? "whitespace-pre-wrap break-words" : "whitespace-pre",
             )}
           >
             {renderLine(item.line, index)}
@@ -315,7 +315,7 @@ export function HttpCodeBlock({ raw }: { raw: string }) {
         aria-multiline="true"
         aria-readonly="true"
         tabIndex={0}
-        className="min-h-0 max-h-[calc(100vh-15rem)] flex-1 min-w-0 overflow-auto bg-background py-2 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        className="max-h-[calc(100vh-15rem)] min-h-0 min-w-0 flex-1 cursor-text select-text overflow-auto bg-background py-2 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
         onCopy={(event) => {
           const text = selectedPacketText(event.currentTarget, value, lines);
           if (text === null) return;
