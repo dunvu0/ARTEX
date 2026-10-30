@@ -77,44 +77,53 @@ func scanSchedule(sc interface{ Scan(...any) error }) (*TaskSchedule, error) {
 	return &s, nil
 }
 
+// ScheduleValidationError adds a stable display code without changing the legacy message.
+type ScheduleValidationError struct {
+	Code    string
+	Message string
+	Params  map[string]any
+}
+
+func (e *ScheduleValidationError) Error() string { return e.Message }
+
 func normalizeScheduleInput(in TaskScheduleInput) (TaskScheduleInput, error) {
 	in.Name = strings.TrimSpace(in.Name)
 	if in.Name == "" {
-		return in, fmt.Errorf("计划名称不能为空")
+		return in, &ScheduleValidationError{Code: "schedule.nameRequired", Message: "计划名称不能为空"}
 	}
 	if in.TimezoneMode == "" {
 		in.TimezoneMode = "beijing"
 	}
 	if in.TimezoneMode != "beijing" && in.TimezoneMode != "system" {
-		return in, fmt.Errorf("时区必须选择北京时间或系统当前时区")
+		return in, &ScheduleValidationError{Code: "schedule.timezoneInvalid", Message: "时区必须选择北京时间或系统当前时区"}
 	}
 	if in.ScheduleType != "once" && in.ScheduleType != "weekly" {
-		return in, fmt.Errorf("规则必须选择一次性或按周")
+		return in, &ScheduleValidationError{Code: "schedule.typeInvalid", Message: "规则必须选择一次性或按周"}
 	}
 	if _, err := time.Parse("15:04", in.StartTime); err != nil {
-		return in, fmt.Errorf("开始时间格式不正确，请使用 HH:MM")
+		return in, &ScheduleValidationError{Code: "schedule.startTimeInvalid", Message: "开始时间格式不正确，请使用 HH:MM"}
 	}
 	if in.EndTime != "" && in.EndTime != "24:00" {
 		if _, err := time.Parse("15:04", in.EndTime); err != nil {
-			return in, fmt.Errorf("结束时间格式不正确，请使用 HH:MM")
+			return in, &ScheduleValidationError{Code: "schedule.endTimeInvalid", Message: "结束时间格式不正确，请使用 HH:MM"}
 		}
 	}
 	if in.ScheduleType == "once" {
 		if _, err := time.Parse("2006-01-02", in.RunDate); err != nil {
-			return in, fmt.Errorf("开始日期格式不正确")
+			return in, &ScheduleValidationError{Code: "schedule.startDateInvalid", Message: "开始日期格式不正确"}
 		}
 		if in.EndDate != "" {
 			startDate, _ := time.Parse("2006-01-02", in.RunDate)
 			endDate, err := time.Parse("2006-01-02", in.EndDate)
 			if err != nil {
-				return in, fmt.Errorf("截止日期格式不正确")
+				return in, &ScheduleValidationError{Code: "schedule.endDateInvalid", Message: "截止日期格式不正确"}
 			}
 			if endDate.Before(startDate) {
-				return in, fmt.Errorf("截止日期不能早于开始日期")
+				return in, &ScheduleValidationError{Code: "schedule.endDateBeforeStart", Message: "截止日期不能早于开始日期"}
 			}
 			if endDate.Equal(startDate) && in.EndTime != "" && in.EndTime != "24:00" {
 				if in.EndTime <= in.StartTime {
-					return in, fmt.Errorf("同一天的结束时间必须晚于开始时间")
+					return in, &ScheduleValidationError{Code: "schedule.endTimeBeforeStart", Message: "同一天的结束时间必须晚于开始时间"}
 				}
 			}
 		}
@@ -123,12 +132,12 @@ func normalizeScheduleInput(in TaskScheduleInput) (TaskScheduleInput, error) {
 		seen := map[int]bool{}
 		for _, day := range in.Weekdays {
 			if day < 1 || day > 7 || seen[day] {
-				return in, fmt.Errorf("星期选择必须为周一至周日且不能重复")
+				return in, &ScheduleValidationError{Code: "schedule.weekdaysInvalid", Message: "星期选择必须为周一至周日且不能重复"}
 			}
 			seen[day] = true
 		}
 		if len(in.Weekdays) == 0 {
-			return in, fmt.Errorf("按周计划至少选择一天")
+			return in, &ScheduleValidationError{Code: "schedule.weekdaysRequired", Message: "按周计划至少选择一天"}
 		}
 		sort.Ints(in.Weekdays)
 		in.RunDate = ""
@@ -137,12 +146,12 @@ func normalizeScheduleInput(in TaskScheduleInput) (TaskScheduleInput, error) {
 	seenTasks := map[int64]bool{}
 	for _, id := range in.TaskIDs {
 		if id <= 0 || seenTasks[id] {
-			return in, fmt.Errorf("绑定任务编号无效或重复")
+			return in, &ScheduleValidationError{Code: "schedule.taskIdsInvalid", Message: "绑定任务编号无效或重复"}
 		}
 		seenTasks[id] = true
 	}
 	if len(in.TaskIDs) > 100 {
-		return in, fmt.Errorf("最多选择100个任务")
+		return in, &ScheduleValidationError{Code: "schedule.tooManyTasks", Message: "最多选择100个任务", Params: map[string]any{"limit": 100}}
 	}
 	return in, nil
 }

@@ -438,3 +438,29 @@ test("timestamps preserve seconds and the selected timezone in both locales", as
     }
   }
 });
+
+test("coded API errors preserve legacy and unknown messages and validate interpolation", async () => {
+  const source = readFileSync(new URL("../src/lib/api-error.ts", import.meta.url), "utf8");
+  const { outputText } = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+  });
+  const { ApiError, apiErrorMessage } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`);
+  for (const locale of ["en", "zh-CN"]) {
+    const messages = JSON.parse(readFileSync(new URL(`../messages/${locale}.json`, import.meta.url), "utf8"));
+    const t = createTranslator({ locale, messages, namespace: "serverErrors" });
+    const raw = "raw {limit} <detail>";
+    for (const error of [new Error(raw), new ApiError(raw, 400), new ApiError(raw, 400, "future.code"),
+      new ApiError(raw, 400, "schedule.tooManyTasks"), new ApiError(raw, 400, "schedule.tooManyTasks", { limit: "100" })]) {
+      assert.equal(apiErrorMessage(error, t), raw);
+    }
+    for (const code of Object.keys(messages.serverErrors.schedule)) {
+      const params = code === "tooManyTasks" ? { limit: 100 } : undefined;
+      const error = new ApiError(raw, 400, `schedule.${code}`, params);
+      assert.equal(apiErrorMessage(error, t), t(`schedule.${code}`, params));
+      assert.equal(error.message, raw);
+      assert.equal(error.status, 400);
+    }
+    const sameText = messages.serverErrors.schedule.nameRequired;
+    assert.equal(apiErrorMessage(new ApiError(sameText, 400), t), sameText);
+  }
+});

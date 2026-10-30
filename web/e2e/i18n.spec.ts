@@ -181,3 +181,283 @@ test("traffic evidence and picker retain time of day in both languages", async (
     await dialog.getByRole("button", { name: messages.trafficEvidence.picker.cancel, exact: true }).click();
   }
 });
+
+test("Repeater retains drafts and DOM while validation follows the sending locale", async ({ page }) => {
+  await page.goto("/function/repeater/");
+  await expect(page.getByRole("heading", { name: zh.repeater.title, exact: true })).toBeVisible();
+  const request = page.getByRole("textbox", { name: zh.repeater.request, exact: true });
+  await request.fill("GET /path HTTP/1.1");
+  await request.evaluate((element) => {
+    window.__i18nDraft = element;
+  });
+  await selectLanguage(page, "en");
+  await expect(page.getByRole("heading", { name: en.repeater.title, exact: true })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: en.repeater.request, exact: true })).toHaveValue("GET /path HTTP/1.1");
+  expect(await page.locator("#repeater-request").evaluate((element) => element === window.__i18nDraft)).toBe(true);
+  await page.getByRole("button", { name: en.repeater.send, exact: true }).click();
+  await expect(page.getByText(en.repeater.errors.host, { exact: true })).toBeVisible();
+  await selectLanguage(page, "zh-CN");
+  await expect(page.getByRole("textbox", { name: zh.repeater.request, exact: true })).toHaveValue("GET /path HTTP/1.1");
+  await page.getByRole("button", { name: zh.repeater.send, exact: true }).click();
+  await expect(page.getByText(zh.repeater.errors.host, { exact: true })).toBeVisible();
+});
+
+test("Repeater preserves raw HTTP, history, and storage warnings in English", async ({ page }) => {
+  const payload = `POST /raw HTTP/1.1\nHost: example.test\nContent-Type: text/plain\n\n${raw}`;
+  const response = {
+    status: 200,
+    status_text: "200 OK",
+    proto: "HTTP/1.1",
+    headers: {},
+    body: raw,
+    body_bytes: 12345,
+    body_truncated: false,
+    elapsed_ms: 12,
+    url: "https://example.test/raw",
+    error: zh.repeater.errors.host,
+  };
+  await page.route("**/api/repeater/send", async (route) => {
+    expect(route.request().postDataJSON()).toEqual({
+      method: "POST",
+      http_version: "HTTP/1.1",
+      url: response.url,
+      headers: { Host: "example.test", "Content-Type": "text/plain" },
+      body: raw,
+      use_recording_proxy: true,
+      insecure_skip_verify: false,
+    });
+    await route.fulfill({ json: response });
+  });
+  await page.goto("/function/repeater/");
+  await selectLanguage(page, "en");
+  await page.locator("#repeater-request").fill(payload);
+  await page.getByRole("button", { name: en.repeater.send, exact: true }).click();
+  await expect(page.locator("#repeater-response")).toHaveValue(`HTTP/1.1 200 OK\n\n\n${raw}`);
+  await expect(page.getByText("12,345 bytes", { exact: true })).toBeVisible();
+  await expect(page.getByText(zh.repeater.errors.host, { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.locator("#repeater-request")).toHaveValue(payload);
+  await page.getByRole("button", { name: en.repeater.library, exact: true }).click();
+  const library = page.getByRole("dialog");
+  await expect(library.getByRole("heading", { name: en.repeater.history })).toBeVisible();
+  await expect(library.locator("time")).toHaveCount(1);
+  await library.getByRole("textbox", { name: en.repeater.searchAria }).fill("no-matching-request");
+  await expect(library.getByText(en.repeater.noMatches)).toBeVisible();
+  await page.keyboard.press("Escape");
+  for (const width of [390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+  await page.evaluate(() => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === "artex_repeater_workspace_v1") throw new DOMException("full", "QuotaExceededError");
+      return original.call(this, key, value);
+    };
+  });
+  await page.locator("#repeater-request").fill(`${payload}\nunsaved`);
+  await expect(page.getByText(en.repeater.storageError, { exact: true })).toBeVisible();
+});
+
+test("Schedules retain drafts, wall dates, timezone and timeline across languages", async ({ page }) => {
+  const schedule = {
+    id: 901, name: raw, enabled: true, timezone_mode: "beijing", timezone: "Asia/Shanghai",
+    schedule_type: "once", run_date: "2026-11-01", end_date: "2026-11-02", weekdays: [],
+    start_time: "23:00:00", end_time: "01:30:00", start_immediately: false, task_ids: [1],
+    status: "waiting", run_count: 1234, next_start: "2026-11-01T15:00:00Z",
+    last_error: "run_date " + raw,
+    history: [{ id: 1, action: "running", success: true, task_id: 1, message: raw, created_at: "2026-10-30T07:08:09Z" }],
+  };
+  let loads = 0;
+  let saved: unknown;
+  await page.route("**/api/schedules**", async (route) => {
+    const request = route.request();
+    if (request.method() === "PATCH") {
+      saved = request.postDataJSON();
+      await route.fulfill({ json: schedule });
+    } else {
+      loads++;
+      await route.fulfill({ json: new URL(request.url()).pathname.endsWith("/901") ? schedule : { schedules: [schedule] } });
+    }
+  });
+  await page.goto("/function/schedules/");
+  await expect(page.getByRole("heading", { name: zh.schedules.title })).toBeVisible();
+  await expect(page.getByText(zh.schedules.nextAt.replace("{time}", ""), { exact: false })).toContainText("23:00");
+  await selectLanguage(page, "en");
+  const row = page.getByRole("row").filter({ has: page.getByRole("checkbox", { name: `Select schedule ${raw}` }) });
+  await expect(row).toContainText("November 1, 2026");
+  await expect(row).toContainText("23:00");
+  await expect(row).toContainText("1,234");
+  await expect(row.getByText(en.schedules.nextAt.replace("{time}", ""), { exact: false })).toContainText("23:00");
+  await expect(row).toContainText(schedule.last_error);
+  await row.getByRole("button", { name: en.schedules.view, exact: true }).click();
+  await expect(page.getByText(en.schedules.timelineTitle, { exact: true })).toBeVisible();
+  await expect(page.getByText("14:08:09", { exact: false })).toBeVisible();
+  await row.getByRole("button", { name: en.schedules.edit, exact: true }).click();
+  const input = page.getByPlaceholder(en.schedules.namePlaceholder);
+  await input.fill(raw + " draft");
+  await input.evaluate((element) => { window.__i18nDraft = element; });
+  const before = loads;
+  await selectLanguage(page, "zh-CN");
+  await expect(page.getByPlaceholder(zh.schedules.namePlaceholder)).toHaveValue(raw + " draft");
+  await expect(page.getByText(zh.schedules.timelineTitle, { exact: true })).toBeVisible();
+  await selectLanguage(page, "en");
+  expect(await input.evaluate((element) => element === window.__i18nDraft)).toBe(true);
+  expect(loads).toBe(before);
+  await page.getByRole("button", { name: en.schedules.save, exact: true }).click();
+  await expect.poll(() => saved).toEqual({
+    name: raw + " draft", enabled: true, timezone_mode: "beijing", schedule_type: "once",
+    run_date: "2026-11-01", end_date: "2026-11-02", weekdays: [], start_time: "23:00",
+    end_time: "01:30", start_immediately: false, task_ids: [1],
+  });
+  await page.getByRole("button", { name: en.schedules.new, exact: true }).click();
+  for (const width of [390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+});
+
+test("Schedule timezone selection follows upstream independently of language", async ({ page }) => {
+  const schedules = ["UTC", "Local"].map((timezone, index) => ({
+    id: 902 + index, name: timezone, enabled: true, timezone_mode: "system", timezone,
+    schedule_type: "once", run_date: "2026-11-01", weekdays: [],
+    start_time: "15:00:00", end_time: "", task_ids: [], status: "waiting", run_count: 0,
+    next_start: "2026-11-01T15:00:00Z",
+  }));
+  const methods: string[] = [];
+  await page.route("**/api/schedules**", async (route) => {
+    methods.push(route.request().method());
+    await route.fulfill({ json: { schedules } });
+  });
+  await page.goto("/function/schedules/");
+  for (const locale of ["zh-CN", "en", "zh-CN"] as const) {
+    await selectLanguage(page, locale);
+    const messages = locale === "en" ? en : zh;
+    for (const [name, hour] of [["UTC", "15:00"], ["Local", "22:00"]]) {
+      const row = page.getByRole("row").filter({ has: page.getByText(name, { exact: true }) });
+      await expect(row.getByText(messages.schedules.nextAt.replace("{time}", ""), { exact: false })).toContainText(hour);
+    }
+  }
+  expect(methods).toEqual(["GET"]);
+});
+
+test("Upload and download errors localize their prefix and preserve raw backend details", async ({ page }) => {
+  const file = { name: "sample.txt", mimeType: "text/plain", buffer: Buffer.from(raw) };
+  await page.route("**/api/workspace/list?*", (route) => route.fulfill({ json: {
+    path: "", entries: [{ name: file.name, path: file.name, dir: false, size: 1, mtime: 0 }],
+  } }));
+  await page.route("**/api/workspace/upload?*", (route) => route.fulfill({ status: 503, body: "" }));
+  await page.route("**/api/workspace/download?*", (route) => route.fulfill({ status: 503, body: "" }));
+  await page.goto("/function/workspace/");
+  for (const locale of ["en", "zh-CN"] as const) {
+    await selectLanguage(page, locale);
+    const messages = locale === "en" ? en : zh;
+    await page.locator('input[type="file"]').setInputFiles(file);
+    await expect(page.getByText(messages.workspace.uploadFailed.replace("{msg}", "HTTP 503"), { exact: true })).toBeVisible();
+    await page.getByTitle(messages.workspace.download, { exact: true }).click();
+    await expect(page.getByText(messages.workspace.downloadFailed.replace("{msg}", "HTTP 503"), { exact: true })).toBeVisible();
+  }
+  await page.route("**/api/chat/upload?*", (route) => route.fulfill({ status: 503, body: raw }));
+  await page.goto("/chat/?c=1");
+  for (const locale of ["en", "zh-CN"] as const) {
+    await selectLanguage(page, locale);
+    const messages = locale === "en" ? en : zh;
+    await page.locator('input[type="file"]').setInputFiles(file);
+    await expect(page.getByText(messages.chat.toast.uploadFailed.replace("{msg}", `HTTP 503 ${raw}`), { exact: true })).toBeVisible();
+  }
+});
+
+test("Asset Sync preserves selection and configuration without locale-triggered reloads", async ({ page }) => {
+  let loads = 0;
+  let failStatus = false;
+  let submitted: unknown;
+  await page.route("**/api/sync/scopesentry/**", async (route) => {
+    const url = new URL(route.request().url());
+    if (failStatus && url.pathname.endsWith("/status")) {
+      await route.fulfill({ status: 503, json: { error: raw } });
+      return;
+    }
+    if (url.pathname.endsWith("/sync")) {
+      submitted = route.request().postDataJSON();
+      await route.fulfill({ json: { synced: { subdomain: 1234, unknown_kind: 2 }, companies: [raw], warnings: [raw], errors: [] } });
+      return;
+    }
+    loads++;
+    await route.fulfill({ json: url.pathname.endsWith("/status")
+      ? { exists: true, configured: true, enabled: true, reachable: true, url: "https://fixture.invalid/mcp", tools: ["raw-tool"] }
+      : { projects: [{ id: "p1", name: raw, tag: raw, AssetCount: 1234 }] } });
+  });
+  await page.goto("/function/sync/");
+  await selectLanguage(page, "en");
+  const row = page.getByRole("row").filter({ has: page.getByText(raw, { exact: true }).first() });
+  await row.getByRole("checkbox").check();
+  await page.getByPlaceholder(en.assetSync.mcpUrlPlaceholder).fill("https://fixture.invalid/draft");
+  await page.getByPlaceholder("ssk_...").fill("draft-only");
+  const before = loads;
+  await selectLanguage(page, "zh-CN");
+  await expect(page.getByPlaceholder(zh.assetSync.mcpUrlPlaceholder)).toHaveValue("https://fixture.invalid/draft");
+  await expect(row.getByRole("checkbox")).toBeChecked();
+  await selectLanguage(page, "en");
+  await expect(page.getByPlaceholder("ssk_...")).toHaveValue("draft-only");
+  expect(loads).toBe(before);
+  await page.getByRole("button", { name: en.assetSync.syncSelected, exact: true }).click();
+  await expect.poll(() => submitted).toMatchObject({ dimension: "project", targets: ["p1"], asset_types: ["subdomain", "service", "app"], create_company: true });
+  await expect(page.getByText("Subdomain: 1,234", { exact: true })).toBeVisible();
+  await expect(page.getByText("unknown_kind: 2", { exact: true })).toBeVisible();
+  failStatus = true;
+  await page.getByRole("button", { name: en.assetSync.refresh, exact: true }).click();
+  await expect(page.getByText(en.assetSync.statusLoadFailed.replace("{msg}", raw), { exact: true })).toBeVisible();
+  for (const width of [390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+});
+
+test("Schedules translate stable backend codes and preserve unknown errors", async ({ page }) => {
+  let coded = true;
+  await page.route("**/api/schedules", async (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: { schedules: [] } });
+    await route.fulfill({ status: 400, json: coded
+      ? { error: "最多选择100个任务", error_code: "schedule.tooManyTasks", error_params: { limit: 100 } }
+      : { error: raw, error_code: "schedule.future", error_params: { limit: 100 } } });
+  });
+  await page.goto("/function/schedules/");
+  await selectLanguage(page, "en");
+  await page.getByRole("button", { name: en.schedules.new, exact: true }).click();
+  await page.getByPlaceholder(en.schedules.namePlaceholder).fill(raw);
+  await page.getByRole("button", { name: en.schedules.save, exact: true }).click();
+  await expect(page.getByText("Select at most 100 tasks", { exact: true })).toBeVisible();
+  await expect(page.getByPlaceholder(en.schedules.namePlaceholder)).toHaveValue(raw);
+  coded = false;
+  await page.getByRole("button", { name: en.schedules.save, exact: true }).click();
+  await expect(page.getByText(raw, { exact: true })).toBeVisible();
+});
+
+test("Finding duplicate decisions keep raw evidence and selection through locale changes", async ({ page }) => {
+  const suggestion = { id: "s1", task_id: "1", left_id: "1", right_id: "2", finding_ids: ["1", "2", "3"], title: raw, reason: raw, state: "pending" };
+  let visible = true;
+  let decision: unknown;
+  await page.route("**/api/exploration/finding-case-suggestions**", async (route) => {
+    if (route.request().method() === "POST") {
+      decision = route.request().postDataJSON();
+      visible = false;
+      return route.fulfill({ json: { case_id: "901" } });
+    }
+    await route.fulfill({ json: visible ? [suggestion] : [] });
+  });
+  await page.goto("/function/findings/");
+  await selectLanguage(page, "en");
+  const checkbox = page.getByRole("checkbox", { name: en.core.cases.includeReport.replace("{id}", "3"), exact: true });
+  await checkbox.uncheck();
+  await page.getByRole("button", { name: en.core.cases.showReason, exact: true }).click();
+  await selectLanguage(page, "zh-CN");
+  await expect(page.getByRole("checkbox", { name: zh.core.cases.includeReport.replace("{id}", "3"), exact: true })).not.toBeChecked();
+  await expect(page.getByRole("button", { name: zh.core.cases.hideReason, exact: true })).toBeVisible();
+  await selectLanguage(page, "en");
+  await page.getByRole("button", { name: en.core.cases.confirmSelected.replace("{count}", "2"), exact: true }).click();
+  await expect.poll(() => decision).toEqual({ accept: true, exclude_ids: ["3"] });
+  visible = true;
+  await page.reload();
+  await page.getByRole("button", { name: en.core.cases.rejectGroup, exact: true }).click();
+  await expect.poll(() => decision).toEqual({ accept: false });
+});

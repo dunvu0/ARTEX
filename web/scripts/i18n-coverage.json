@@ -99,5 +99,20 @@
   },
   "components/finding-case-list.tsx": {},
   "app/(main)/function/findings/case/page.tsx": {},
-  "app/(main)/system/notify/_components/channel-fields.ts": {}
+  "app/(main)/system/notify/_components/channel-fields.ts": {},
+  "components/repeater/repeater-editor.tsx": {},
+  "components/repeater/repeater-history.tsx": {},
+  "components/repeater/repeater-text-pane.tsx": {},
+  "components/repeater/repeater-workspace.tsx": {
+    "RepeaterWorkspace": [
+      "默认"
+    ]
+  },
+  "components/repeater/repeater-navigator.tsx": {
+    "RepeaterNavigator": [
+      "默认"
+    ]
+  },
+  "app/(main)/function/schedules/page.tsx": {},
+  "app/(main)/function/sync/page.tsx": {}
 }

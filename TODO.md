@@ -46,8 +46,8 @@ ideas. Verify them against current source, record reference commits and preserve
 required attribution for copied material. Do not merge unrelated fork features.
 
 The dated batches below are historical records. Their pending items are superseded
-by the Phase 1 completion record at the end of this phase. Phase 2 remains a
-separate backlog, including advanced workflows that share some localized widgets.
+by the Phase 1 and Phase 2 completion records. Phase 4 remains optional and deferred;
+it is not part of the English UI completion scope.
 
 ### Reference reuse correction (2026-10-30)
 
@@ -588,49 +588,179 @@ checklist during each sync. A screen is complete only when its UI states, dialog
 validation, and empty/loading/error controls are covered; backend error text and
 generated content remain explicit exclusions until their later phases.
 
-- [ ] Findings consolidation, duplicate suggestions, cases, merge/reject flows,
+- [x] Findings consolidation, duplicate suggestions, cases, merge/reject flows,
       severity filters, search, and sorting.
-- [ ] Finding side questions, retest controls, and reproduction screenshots.
-- [ ] Repeater workspace, request editor, imports, drafts, history, filters, and
-      replay errors.
-- [ ] Asset graph and network topology modes, zones, paths, mapping, and viewport.
-- [ ] Calendar scheduling, timelines, date ranges, status labels, and bulk actions.
-- [ ] Remarks, worker-count settings, multi-model worker pools, and validation.
+- [x] Finding side questions, retest controls, and reproduction screenshots.
+- [x] Repeater workspace, request editor, imports, drafts, history, filters, and
+      replay errors. UI strings use the `repeater` namespace; request/response
+      text, stored tab/group names, and backend response errors stay raw; the
+      unchanged default group seed translates only at display time.
+- [x] Asset graph and network topology modes, zones, paths, mapping, and viewport.
+- [x] Calendar scheduling, timelines, date ranges, status labels, and bulk actions.
+- [x] Remarks, worker-count settings, multi-model worker pools, and validation.
       Settings worker-count/pool controls and validation are covered in Phase 1;
       template worker-count controls and shared inline remark/name editors are
-      covered too. Task-specific forms and caller-supplied labels remain pending.
-- [ ] Intelligence views, credential processing, and traffic evidence.
-- [ ] Automatic task/chat titles: localize controls/status only; preserve generated
+      covered too. Task-specific forms use tasksCreate/tasksList/taskDetail messages;
+      Schedules caller labels are covered in the completion batch below.
+- [x] Intelligence views, credential processing, and traffic evidence.
+- [x] Automatic task/chat titles: localize controls/status only; preserve generated
       content.
-- [ ] Approval script review, side chat, history search, retries, Basic Auth,
+- [x] Approval script review, side chat, history search, retries, Basic Auth,
       proxy tests, egress IP, and update settings.
       Active Settings Basic Auth/proxy/egress/manual-update controls are covered
-      in Phase 1; the other listed screens remain pending.
+      in Phase 1; approval snapshots, side questions, history search and retries
+      are covered by the shared core widgets.
+- [x] Asset Sync data-source setup, project/task selection, filters, results, and errors.
 
 ### Phase 2 checks
 
-- [ ] Run the AST inventory against the upstream diff and classify every new string.
-- [ ] Add semantic keys and both catalog values for each accepted UI string.
-- [ ] Verify English layouts, dates, numbers, filters, drafts, live tasks, Repeater
+- [x] Run the AST inventory against the upstream diff and classify every new string.
+- [x] Add semantic keys and both catalog values for each accepted UI string.
+- [x] Verify English layouts, dates, numbers, filters, drafts, live tasks, Repeater
       state, API responses, SSE reconnects, and error flows.
-- [ ] Run catalog checks, AST inventory, TypeScript, static build, and focused
+- [x] Run catalog checks, AST inventory, TypeScript, static build, and focused
       frontend checks. Run backend checks when backend behavior changes.
-- [ ] Record any intentional Chinese text and its reason.
+- [x] Record any intentional Chinese text and its reason.
+
+### Repeater batch (2026-10-30)
+
+- Localized the Repeater workspace, request library, filters, bulk actions,
+  request/response panes, target dialog, history, line wrapping, copy labels,
+  and storage-failure feedback. Existing drafts, history, raw HTTP, and response
+  bodies are preserved across locale changes.
+- Replaced parser UI strings with stable `RepeaterParseError` codes; the display
+  editor and traffic-import boundaries translate known validation errors while
+  backend errors remain verbatim. Original Chinese Error.message values remain
+  compatible with existing callers. Toasts keep the triggering event's locale.
+  Storage quota failures emit a local event handled by the persistent locale
+  provider, including imports and sends that finish after leaving Repeater.
+- Added two Repeater browser checks and a typed-error regression test. Catalog
+  checks (3,574 messages), 19 focused i18n tests, 29 Repeater tests, TypeScript,
+  static export (34 pages), all five browser tests, and `git diff --check` pass.
+  Browser checks verify Chinese/English validation, draft/DOM retention, raw
+  request payloads and response/backend-error text, reload persistence, history,
+  filtering, storage failure feedback, and document width at 390/768/1440px.
+  HTTP is mocked: actual backend replay, proxy/TLS behavior and every modal/bulk
+  workflow are not browser-verified. Existing unit tests cover bulk operations,
+  import byte preservation and in-flight request state.
+- Strict AST coverage includes the five Repeater UI components. The only added
+  inventory candidates against UPSTREAM_BASE are two default-group seed
+  comparisons and the existing native language selector. Stored names stay raw;
+  the unchanged `default` group seed has a translated display label. No storage
+  schema migration is introduced. Raw/Pretty labels and HTTP units remain as-is.
+- Both pinned reference forks lack this Repeater workflow; translations are new
+  against current source. See LOCALIZATION_SOURCES.md. No upstream merge, commit,
+  push, or backend behavior change was made; UPSTREAM_BASE is unchanged.
+
+### Phase 2 completion and integration checks (2026-10-30)
+
+- Completed standalone Schedules: form controls, calendar/time pickers, recurrence,
+  overnight/end-date descriptions, timezone/status labels, timeline, search,
+  pagination, selection and bulk feedback. Date-only values stay wall dates;
+  next-window timestamps follow upstream timezone selection, including the
+  browser fallback for `Local`/absent timezones. Language changes never change
+  the scheduling timezone. Existing schedule names,
+  remarks, IDs, history messages and unknown statuses remain raw. The old backend
+  error text replacement is removed. Locale changes retain form DOM and drafts.
+- Completed Asset Sync by reusing reviewed artex-global translations/edits.
+  Current-translator refs keep automatic/manual reload callbacks stable across
+  locale changes, preserving selected rows and URL/API-key drafts. Source names,
+  warnings/errors, transport values and payloads remain unchanged. Counts and
+  result lists use shared formatting; English controls wrap on narrow screens.
+- Re-reviewed advanced Phase 2 workflows already implemented in Phase 1:
+  Findings cases/suggestions/filters, side questions/retests/reproduction,
+  coverage graph network/asset modes and mapping, task remark/worker forms,
+  intelligence/credential/traffic widgets, automatic-title controls, approval
+  scripts/history/retries and Settings controls. Their catalogs, display mappings,
+  loading dependencies and raw-data exclusions cover the current source. Added a
+  duplicate accept/reject browser regression with retained exclusions/reason state.
+- Validation: 3,752 messages, 20 i18n tests, 29 Repeater tests, TypeScript,
+  static export (34 pages), nine browser tests and diff whitespace checks pass.
+  Catalog wording-drift check against fork HEAD reports no unchanged-English
+  candidates. Strict coverage now includes Schedules and Asset Sync.
+- Inventory against UPSTREAM_BASE has 815 candidates. Its only additions are the
+  two unchanged Repeater default-name comparisons and the native locale label.
+  Remaining Chinese is reviewed metadata/fallbacks, mock/test content, stored
+  names, prompts/report/protocol parsing, backend messages, the hidden clipboard
+  fallback label and the unused upstream UpdateCard. The active Settings screen
+  imports the localized manual-update card. This count is not UI coverage.
+- Mocked browser checks cover Chinese/English choice, layout at 390/768/1440px,
+  preserved drafts/DOM/filter selections, exact schedule/sync/merge payloads,
+  raw evidence and backend errors, timezone/date formatting, and typed errors.
+  The prior Phase 1 graph/approval/retest/credential browser evidence still applies;
+  this is not an exhaustive test of every modal or external integration.
+- Live integration used the current Go backend, current static export and an
+  isolated disposable PostgreSQL 16 instance. Verified setup/authentication,
+  schedule create/reload and unchanged stored timezone/time, task pause/resume
+  UI, retained composer draft and SSE connection across locale changes, automatic
+  SSE reconnect with Last-Event-ID 4, and the real coded validation response.
+  Repeater replayed a local HTTP fixture and preserved raw request/response and
+  reload state; the isolated backend enabled ARTEX_REPEATER_ALLOW_LOCAL solely
+  for that fixture after verifying the default loopback rejection.
+- Database-backed Go tests pass without skips for calendar manual resume/FIFO,
+  failure handling, run-now/restart/deadlines, window/timezone boundaries and
+  unavailable-database auth handling. No external LLM was configured: generated
+  output language, successful agent/tool execution, external ScopeSentry, TLS and
+  recording-proxy integration are not claimed by these UI checks.
+- Temporary backend/proxy/browser/database resources are cleaned up. Test scripts
+  and Go logs are in /tmp/artex-locale-live; no credentials are recorded here.
+  No commit, push, deployment or upstream merge is made. UPSTREAM_BASE stays
+  unchanged. Phase 4 remains the optional, deferred output-language feature.
+
+### Cross-check corrections (2026-10-30)
+
+- Confirmed the `Local`/absent-timezone browser fallback already exists in RuoJi6
+  at both UPSTREAM_BASE and `35a33b20f9d52010f99afcdf1411441da90208be`.
+  Restored its direct Intl next-window formatter, substituting only the UI locale.
+  Schedule execution still uses upstream Beijing/system timezone selection and
+  the server's `TZ`/OS configuration, independently of UI language.
+- Removed frontend Chinese upload/download error prefixes from the API helpers.
+  Workspace and Chat/task uploads reuse existing localized UI messages with HTTP
+  status details. Evidence downloads use an HTTP-status fallback; backend error
+  text remains raw. No new catalog or error-code framework is needed.
+- Added browser regressions for UTC/Local timezone display across language changes
+  and Workspace/Chat upload/download failures in both locales. The existing
+  Beijing schedule check now asserts the next-window time explicitly.
+- Validation: 3,752 catalog messages, 20 i18n tests, TypeScript, static export
+  (34 pages), all 11 mocked browser tests and seven direct API failure checks pass.
+  Inventory now has 810 candidates, with the same three reviewed additions
+  against UPSTREAM_BASE. Diff whitespace checks pass.
 
 ## Phase 3: Stable backend errors and status messages
 
-- [ ] Add stable error codes/message IDs and structured parameters only where
+The initial rollout is intentionally limited to schedule input validation, including
+task creation with a schedule. Other backend errors retain the accepted raw fallback;
+this phase does not claim a translated backend or introduce a global error rewrite.
+
+- [x] Add stable error codes/message IDs and structured parameters only where
       needed by covered screens. Keep the existing error string for compatibility.
-- [ ] Translate known codes at the frontend display boundary. Preserve unknown
+- [x] Translate known codes at the frontend display boundary. Preserve unknown
       errors and raw details; never regex-match arbitrary rendered errors.
-- [ ] Reuse existing machine-readable statuses; never translate wire values or
-      persisted evidence. Apply the same display mapping to relevant SSE events.
-- [ ] Check old clients, unknown codes, interpolation, and live error/status flows.
+- [x] Reuse existing machine-readable statuses; never translate wire values or
+      persisted evidence. Existing shared status mappings cover SSE-driven
+      task/session displays; schedule validation is HTTP-only.
+- [x] Check old clients, unknown codes, interpolation, and live error/status flows.
 
 No backend locale negotiation, cookies, Accept-Language headers, or SSE/download
 language parameters are needed for this phase. If server-rendered localized
 messages become necessary, scope that separately and resolve locale per request,
 never through mutable process-global request state.
+
+### Validation contract (2026-10-30)
+
+- Thirteen schedule validation codes are emitted at their origin as typed errors.
+  The HTTP response adds `error_code` and optional `error_params` while retaining
+  the original `error` string and status. Old callers still receive the same
+  Error.message; task creation uses the same contract for schedule validation.
+- The API client preserves metadata in ApiError. Only Schedules and the task
+  creation display boundary opt into recognized code translation. Unknown codes,
+  old responses and malformed interpolation parameters fall back to raw messages.
+  Existing HTTP-status consumers, including Skill overwrite, remain compatible.
+- Database unit tests cover all codes, original messages, the numeric limit,
+  overnight windows and one-time date normalization. HTTP handler tests verify
+  the actual validation response and old-client JSON decoding. Browser checks
+  cover coded/unknown errors and retained form drafts. No database migration,
+  translated stored history, prompt change or locale-dependent API payload occurs.
 
 ## Phase 4: Optional agent output language
 
@@ -659,10 +789,13 @@ fetch upstream
       the focused locale browser smoke suite.
       AST inventory reports new candidates; strict leakage checks apply only to
       declared completed UI coverage with reviewed exceptions.
-- [ ] Review source wording changes as well as newly introduced literals: a clean
-      Git merge and matching catalog keys do not prove translation freshness.
-- [ ] Default to full upstream merges. Record exceptional cherry-picks separately;
-      do not advance the full-sync baseline past commits not actually merged.
-- [ ] Require an upstream commit range in sync commit messages.
-- [ ] Never let an extractor overwrite curated translations.
-- [ ] Never claim a feature is localized because it merely falls back to Chinese.
+
+These are recurring sync policies, not outstanding implementation tasks:
+
+- Review source wording changes as well as newly introduced literals: a clean
+  Git merge and matching catalog keys do not prove translation freshness.
+- Default to full upstream merges. Record exceptional cherry-picks separately;
+  do not advance the full-sync baseline past commits not actually merged.
+- Require an upstream commit range in sync commit messages.
+- Never let an extractor overwrite curated translations.
+- Never claim a feature is localized because it merely falls back to Chinese.

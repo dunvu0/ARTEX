@@ -25,7 +25,7 @@ import { toast } from "sonner";
 
 import { HttpCodeBlock } from "@/components/http-code-block";
 import { LinkTrafficDialog } from "@/components/link-traffic-dialog";
-import { requestFromTraffic } from "@/components/repeater/repeater-http";
+import { RepeaterParseError, requestFromTraffic } from "@/components/repeater/repeater-http";
 import { seedFromEvidence } from "@/components/repeater/repeater-store";
 import {
   AlertDialog,
@@ -352,7 +352,8 @@ export function TrafficHistory({ taskId }: { taskId?: string }) {
           );
           imported += 1;
         } catch (error) {
-          toast.error(`${flow.host}：${(error as Error).message}`);
+          const detail = error instanceof RepeaterParseError ? ui(`repeater.errors.${error.code}`) : (error as Error).message;
+          toast.error(`${flow.host}：${detail}`);
         }
       }
       if (imported) {

@@ -4,6 +4,7 @@ import * as React from "react";
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { apiErrorMessage } from "@/lib/api-error";
 
 import {
   DndContext,
@@ -3159,6 +3160,7 @@ function CreateTaskSheet({
   onCategoriesChanged: () => void;
 }) {
   const t = useTranslations("tasksCreate");
+  const serverErrors = useTranslations("serverErrors");
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState("");
   const [remark, setRemark] = React.useState("");
@@ -3301,7 +3303,7 @@ function CreateTaskSheet({
       setOpen(false);
       onCreated();
     } catch (e) {
-      toast.error(t("createFailed", { detail: (e as Error).message }));
+      toast.error(t("createFailed", { detail: apiErrorMessage(e, serverErrors) }));
     } finally {
       setCreating(false);
     }

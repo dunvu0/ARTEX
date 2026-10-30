@@ -6,8 +6,9 @@ dashboard and Settings, task lists/templates/archives and every Task detail tab,
 Chat, Workspace, Assets, basic Findings/Traffic lists and details, command/LLM
 records, Agents/editor, LLM, MCP, Skills, Tools, Notifications, interception rules,
 approvals, logs controls, and their core shared widgets. Transcript, side questions,
-HTTP/evidence controls and file editors follow the locale. Advanced workflows in
-Phase 2 still require their own coverage review; backend errors/logs, prompts,
+HTTP/evidence controls and file editors follow the locale. Phase 2 includes
+Schedules, Repeater, Asset Sync and the advanced shared workflows reviewed in
+TODO.md. Most backend errors/logs, prompts,
 reports, raw HTTP and user/model content remain unchanged.
 
 Self-update checks, installation, manual rollback, and startup application of
@@ -126,8 +127,12 @@ CI installs Chromium and runs the same suite after its static build.
 Use `useLocaleFormatting()` from `web/src/i18n/formatting.ts` for new localized
 date/number displays and calendar controls. The provider restores the browser
 timezone after hydration. Keep scheduling timezone choices, stored dates, raw
-HTTP, identifiers, and user/model content unchanged. Existing screen-specific
-formatters in standalone scheduling/Repeater workflows remain Phase 2. Status badges translate known wire values at
+HTTP, identifiers, and user/model content unchanged. Schedule execution follows
+upstream: Beijing time or the server's system timezone (`TZ`/OS). Next-window
+displays also follow upstream: use the supplied timezone, with `Local`/absent
+values falling back to the browser timezone. Language selection changes formatting
+only, never timezone choices or wire values. Date-only values stay wall dates.
+Status badges translate known wire values at
 display time, retain unknown values verbatim, and fall back to the original
 Chinese metadata if a newly merged status has no catalog entry. Other callers
 of `statusMeta()` remain Chinese until explicitly migrated with their screens.
@@ -138,6 +143,18 @@ and compatible next-intl edits; selected wording comes from ScopeWeaver. Exact
 commits, source groups, adaptations and AGPL-3.0 attribution are recorded in
 LOCALIZATION_SOURCES.md. Existing terms and restrictions are preserved
 in both languages. Backend errors, warnings, and skip reasons remain verbatim.
+Upload/download helpers return neutral HTTP status details; the calling UI owns
+the localized failure prefix. Preserve backend error text in those details.
+
+Repeater UI controls use the `repeater` catalog namespace. Parser validation uses
+stable local error codes at the editor and traffic-import boundaries; raw HTTP,
+saved drafts/history, user-created names, and backend errors remain unchanged.
+The unchanged default group seed translates only at display time. Storage failure
+events are handled by the persistent provider even after leaving Repeater.
+Run its protocol/storage regression tests with
+`node --test src/components/repeater/repeater-store.test.mjs` from `web/`.
+The browser suite also checks Repeater locale/draft retention, mocked replay,
+history, filtering and storage errors; it does not verify actual backend replay.
 
 The task-list inventory permits original status/company-scope metadata for
 fallback, upload-manifest instructions for workers, the persisted Chinese default
@@ -171,3 +188,23 @@ locale changes and deliver activity; real transport reconnects and backend curso
 compensation remain integration checks. Transcript, side-question and approval
 widgets are now included in Phase 1; the earlier Sessions batch exclusions are
 superseded by the completion record in TODO.md.
+
+Schedule validation is the first narrowly scoped backend error-code contract.
+`db.ScheduleValidationError` keeps its original Chinese Error.message; HTTP adds
+`error_code` and optional `error_params`. `ApiError` retains all three, and
+`apiErrorMessage` translates recognized codes only at the Schedules/task-creation
+UI boundary. Unknown codes, malformed arguments and old servers stay compatible
+through the raw fallback. Do not add string matching or backend locale state.
+
+Focused backend verification (use an isolated PostgreSQL database for runtime
+schedule/auth tests via `ARTEX_PG_DSN`):
+
+```bash
+go test ./db ./server -run 'Test(Schedule|CreateScheduleValidationResponse|CalendarManual|CalendarSchedule|RuntimeSchedule|EvaluateScheduleWindow|AuthStatus|AuthInit)' -count=1
+```
+
+Without that variable, database-dependent tests may skip. Do not point these
+tests at a normal deployment database. UI/browser checks are described above;
+the nine-test suite also covers scheduling persistence-shaped payloads, Asset
+Sync draft/selection retention, stable error codes and duplicate merge/reject
+payloads. External model/tool execution is outside the English UI release scope.

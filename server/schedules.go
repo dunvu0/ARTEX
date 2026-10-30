@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -110,12 +111,12 @@ func decodeSchedule(r *http.Request) (scheduleRequest, error) {
 func (s *Server) createSchedule(w http.ResponseWriter, r *http.Request) {
 	req, err := decodeSchedule(r)
 	if err != nil {
-		writeErr(w, 400, err.Error())
+		writeScheduleError(w, 400, err)
 		return
 	}
 	item, err := s.m.pg.CreateTaskSchedule(s.scheduleInput(req, nil))
 	if err != nil {
-		writeErr(w, 400, err.Error())
+		writeScheduleError(w, 400, err)
 		return
 	}
 	if req.StartImmediately && item.Enabled {
@@ -137,12 +138,12 @@ func (s *Server) updateSchedule(w http.ResponseWriter, r *http.Request) {
 	}
 	req, err := decodeSchedule(r)
 	if err != nil {
-		writeErr(w, 400, err.Error())
+		writeScheduleError(w, 400, err)
 		return
 	}
 	item, err := s.m.pg.UpdateTaskSchedule(id, s.scheduleInput(req, old))
 	if err != nil {
-		writeErr(w, 400, err.Error())
+		writeScheduleError(w, 400, err)
 		return
 	}
 	writeJSON(w, 200, item)
@@ -273,4 +274,15 @@ func scheduleRequestFromTask(raw json.RawMessage) (*scheduleRequest, error) {
 		return nil, err
 	}
 	return &req, nil
+}
+
+func writeScheduleError(w http.ResponseWriter, status int, err error) {
+	var validation *db.ScheduleValidationError
+	if errors.As(err, &validation) {
+		writeJSON(w, status, map[string]any{
+			"error": err.Error(), "error_code": validation.Code, "error_params": validation.Params,
+		})
+		return
+	}
+	writeErr(w, status, err.Error())
 }

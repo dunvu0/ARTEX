@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { WrapTextIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { LiveClock } from "@/app/(main)/_components/live-clock";
 import { CopyButton } from "@/components/copy-button";
@@ -33,6 +34,7 @@ export function RepeaterTextPane({
   panelClassName?: string;
   showClock?: boolean;
 }) {
+  const t = useTranslations("repeater");
   const gutter = React.useRef<HTMLPreElement>(null);
   const syntax = React.useRef<HTMLDivElement>(null);
   const [wrapLines, setWrapLines] = React.useState(true);
@@ -49,20 +51,20 @@ export function RepeaterTextPane({
         <label htmlFor={id} className="font-medium text-xs">
           {label}
         </label>
-        <span className="text-muted-foreground text-xs tabular-nums">{lines} 行</span>
+        <span className="text-muted-foreground text-xs tabular-nums">{t("lines", { count: lines })}</span>
         {showClock ? <LiveClock className="ml-auto" /> : null}
         <button
           type="button"
           className="inline-flex h-6 items-center gap-1 rounded border px-1.5 text-[10px] text-muted-foreground hover:bg-muted"
           onClick={() => setWrapLines((value) => !value)}
-          title={wrapLines ? "切换为不换行" : "切换为自动换行"}
-          aria-label={wrapLines ? "切换为不换行" : "切换为自动换行"}
+          title={wrapLines ? t("wrapTitle") : t("noWrapTitle")}
+          aria-label={wrapLines ? t("wrapTitle") : t("noWrapTitle")}
         >
           <WrapTextIcon className="size-3" />
-          {wrapLines ? "换行" : "不换行"}
+          {wrapLines ? t("wrap") : t("noWrap")}
         </button>
         {toolbar}
-        <CopyButton text={value} label={`复制${label}`} className={showClock ? "ml-0" : "ml-auto"} />
+        <CopyButton text={value} label={t("copy", { label })} className={showClock ? "ml-0" : "ml-auto"} />
       </div>
       <div className="relative flex min-h-0 flex-1 overflow-hidden rounded border border-input focus-within:border-ring">
         <div

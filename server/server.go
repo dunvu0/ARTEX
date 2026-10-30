@@ -1623,7 +1623,7 @@ func (s *Server) createTask(w http.ResponseWriter, r *http.Request) {
 		input := s.scheduleInput(*req.Schedule, nil)
 		input.TaskIDs = nil
 		if err := db.ValidateTaskScheduleInput(input); err != nil {
-			writeErr(w, 400, err.Error())
+			writeScheduleError(w, 400, err)
 			return
 		}
 		schedule = &input

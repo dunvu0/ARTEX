@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
+import { toast } from "sonner";
 
 import en from "../../messages/en.json";
 import zh from "../../messages/zh-CN.json";
@@ -31,6 +32,13 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.lang = locale;
+  }, [locale]);
+
+  // Repeater can finish saving after navigation or import from another screen.
+  useEffect(() => {
+    const onStorageError = () => toast.error(messages[locale].repeater.storageError);
+    window.addEventListener("artex:repeater-storage-error", onStorageError);
+    return () => window.removeEventListener("artex:repeater-storage-error", onStorageError);
   }, [locale]);
 
   function setLocale(next: Locale) {

@@ -66,6 +66,24 @@ reports, raw HTTP and backend details keep their original values.
 
 ## Adaptations and maintenance
 
+Schedules and Asset Sync completion (2026-10-30): neither pinned reference contains
+Schedules. Its `schedules` namespace and the schedule validation `serverErrors`
+namespace are written against current source. Asset Sync reuses artex-global's
+`assetSync` catalog and compatible next-intl component edits, compared against its
+common ancestor and current source. ScopeWeaver's corresponding screen was also
+reviewed. Both reference implementations reload on locale changes; this fork
+keeps data-loading callbacks stable with current-translator refs for error notifications, so
+selection and configuration drafts survive. Existing upstream comments, wire
+values and raw source results are retained; formatting and small-screen wrapping
+use this fork's shared conventions. No unrelated reference behavior is imported.
+
+Repeater Phase 2 (2026-10-30): checked both pinned reference snapshots above;
+neither contains the current Repeater route/components or Repeater translations.
+The `repeater` namespace is written against the current upstream workspace.
+No reference code or translations were copied for this batch. The original
+Chinese parser messages remain as compatibility fallbacks; known typed errors
+are translated at the editor and traffic-import display boundaries.
+
 - Keep Chinese default, explicit English opt-in, localStorage persistence, static
   export and the existing provider. Dates use the shared formatter and provider
   timezone, without reading localStorage from formatting helpers.
