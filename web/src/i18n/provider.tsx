@@ -44,6 +44,8 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
   return (
     <LocaleContext.Provider value={{ locale, setLocale }}>
+      <title>{messages[locale].metadata.title}</title>
+      <meta name="description" content={messages[locale].metadata.description} />
       <NextIntlClientProvider locale={locale} messages={messages[locale]} formats={formats} timeZone={timeZone}>
         {children}
       </NextIntlClientProvider>

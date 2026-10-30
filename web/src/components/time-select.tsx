@@ -23,6 +23,7 @@ function TimePart({
   placeholder,
   ariaLabel,
   onValueChange,
+  portalContainer,
 }: {
   value?: string;
   items: string[];
@@ -30,6 +31,7 @@ function TimePart({
   placeholder: string;
   ariaLabel: string;
   onValueChange: (value: string) => void;
+  portalContainer?: React.RefObject<HTMLElement | null>;
 }) {
   const [inputValue, setInputValue] = React.useState(value ?? "");
   React.useEffect(() => setInputValue(value ?? ""), [value]);
@@ -76,7 +78,7 @@ function TimePart({
           if (event.key === "Enter") commit(inputValue);
         }}
       />
-      <ComboboxContent className="max-h-64" sideOffset={4}>
+      <ComboboxContent className="max-h-64" sideOffset={4} portalContainer={portalContainer}>
         <ComboboxList>
           {(item) => (
             <ComboboxItem key={item} value={item}>
@@ -95,12 +97,14 @@ export function TimeSelect({
   optional = false,
   placeholder,
   "aria-label": ariaLabel,
+  portalContainer,
 }: {
   value?: string;
   onValueChange: (value: string) => void;
   optional?: boolean;
   placeholder?: string;
   "aria-label"?: string;
+  portalContainer?: React.RefObject<HTMLElement | null>;
 }) {
   const t = useTranslations("time");
   const selected = splitTime(value);
@@ -117,6 +121,7 @@ export function TimeSelect({
         placeholder={t("hour")}
         ariaLabel={ariaLabel ? `${ariaLabel} ${t("hour")}` : t("hour")}
         onValueChange={updateHour}
+        portalContainer={portalContainer}
       />
       <span className="font-medium text-muted-foreground">:</span>
       <TimePart
@@ -126,6 +131,7 @@ export function TimeSelect({
         placeholder={t("minute")}
         ariaLabel={ariaLabel ? `${ariaLabel} ${t("minute")}` : t("minute")}
         onValueChange={updateMinute}
+        portalContainer={portalContainer}
       />
       {optional && hasValue && (
         <Button

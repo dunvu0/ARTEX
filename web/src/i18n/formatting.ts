@@ -23,3 +23,12 @@ export function useLocaleFormatting() {
   const locale = useLocale();
   return { ...formatter, calendarLocale: locale === "en" ? enUS : zhCN };
 }
+
+export function useDateTime() {
+  const formatter = useFormatter();
+  return (value: string | number | Date | undefined | null, fallback = "—") => {
+    if (value == null || value === "") return fallback;
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value) : formatter.dateTime(date, "timestamp");
+  };
+}

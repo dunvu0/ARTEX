@@ -1,4 +1,7 @@
 "use client";
+import { useLocaleFormatting } from "@/i18n/formatting";
+
+import { useTranslations } from "next-intl";
 
 import * as React from "react";
 
@@ -36,21 +39,21 @@ function withoutPacket(text: string) {
   return text.replace(/```(?:http|bash|shell|sh|json|text)?\s*\n[\s\S]*?```/gi, "").trim();
 }
 
-function parseSteps(report: string, fallback: string): ReproductionStep[] {
+function parseSteps(report: string, fallback: string, labels: { verify: string; noSteps: string; process: string }): ReproductionStep[] {
   const section = extractSection(report);
   if (!section) {
     return [
       {
         number: 1,
-        title: "执行验证并确认结果",
-        body: fallback.trim() || "暂无结构化复现步骤，查看下方原始报告。",
+        title: labels.verify,
+        body: fallback.trim() || labels.noSteps,
       },
     ];
   }
 
   const markers = [...section.matchAll(/^\s*(?:###\s*)?(?:步骤\s*)?(\d+)[.、:：)）]\s*(.+)$/gim)];
   if (markers.length === 0) {
-    return [{ number: 1, title: "复现过程", body: withoutPacket(section) }];
+    return [{ number: 1, title: labels.process, body: withoutPacket(section) }];
   }
 
   return markers.map((marker, index) => {
@@ -82,13 +85,13 @@ function packetText(detail: FindingTrafficDetail, side: "request" | "response") 
   return [head, body].filter(Boolean).join("\n\n").trim();
 }
 
-function packetCapturedAt(value: number | string | null | undefined) {
-  if (value === null || value === undefined || value === "") return "未知";
+function packetCapturedAt(value: number | string | null | undefined, dateTime: (value: Date) => string) {
+  if (value === null || value === undefined || value === "") return "—";
   const numeric = typeof value === "number" ? value : Number(value);
   const date = Number.isFinite(numeric)
     ? new Date(numeric < 10_000_000_000 ? numeric * 1000 : numeric)
     : new Date(String(value));
-  return Number.isNaN(date.getTime()) ? "未知" : date.toLocaleString("zh-CN");
+  return Number.isNaN(date.getTime()) ? "—" : dateTime(date);
 }
 
 function PacketDisclosure({
@@ -100,6 +103,8 @@ function PacketDisclosure({
   bindingId?: string;
   contextTask?: string;
 }) {
+  const format = useLocaleFormatting();
+  const ui = useTranslations();
   const [open, setOpen] = React.useState(false);
   const [detail, setDetail] = React.useState<FindingTrafficDetail | null>(null);
   const [error, setError] = React.useState("");
@@ -124,15 +129,15 @@ function PacketDisclosure({
   }, [bindingId, contextTask, detail, findingId, open]);
 
   if (!bindingId) {
-    return <p className="mt-3 border-t pt-3 text-xs text-muted-foreground">此步骤暂无已绑定的真实流量证据。</p>;
+    return <p className="mt-3 border-t pt-3 text-xs text-muted-foreground">{ui("core.reproduction.noTraffic")}</p>;
   }
 
   async function sendToRepeater() {
     if (!detail) return;
     setRepeaterBusy(true);
     try {
-      if (detail.request.binary) toast.info("请求体为二进制，已留空；完整正文请先下载");
-      else if (detail.request.truncated) toast.info("请求体为预览片段，完整正文请先下载");
+      if (detail.request.binary) toast.info(ui("core.traffic.binaryRequest"));
+      else if (detail.request.truncated) toast.info(ui("core.traffic.truncatedRequest"));
       seedFromEvidence(
         requestFromEvidence(
           {
@@ -147,7 +152,7 @@ function PacketDisclosure({
       );
       router.push("/function/repeater");
     } catch (e) {
-      toast.error(`送入请求重发失败：${(e as Error).message}`);
+      toast.error(ui("core.traffic.importFailed", { error: (e as Error).message }));
     } finally {
       setRepeaterBusy(false);
     }
@@ -165,7 +170,7 @@ function PacketDisclosure({
           onClick={() => setOpen((current) => !current)}
         >
           {open ? <ChevronDownIcon /> : <ChevronRightIcon />}
-          {open ? "收起数据包" : "查看数据包"}
+          {open ? ui("core.reproduction.hidePacket") : ui("core.reproduction.showPacket")}
         </Button>
         {open && detail ? (
           <Button
@@ -176,17 +181,16 @@ function PacketDisclosure({
             disabled={repeaterBusy}
             onClick={() => void sendToRepeater()}
           >
-            {repeaterBusy ? "准备中…" : "送入请求重发"}
+            {repeaterBusy ? ui("core.reproduction.preparing") : ui("core.traffic.sendRepeater")}
           </Button>
         ) : null}
       </div>
       {open ? (
         <div className="mt-3 rounded-lg border bg-muted/20 p-3">
-          {error ? <p className="text-destructive text-xs">数据包加载失败：{error}</p> : null}
+          {error ? <p className="text-destructive text-xs">{ui("core.reproduction.packetError")}{error}</p> : null}
           {!error && bindingId && !detail ? (
             <div className="flex items-center gap-2 text-muted-foreground text-xs">
-              <LoaderCircleIcon className="size-3.5 animate-spin" /> 正在读取已保存的真实流量…
-            </div>
+              <LoaderCircleIcon className="size-3.5 animate-spin" /> {ui("core.reproduction.loadingTraffic")}</div>
           ) : null}
           {detail ? (
             <div className="space-y-3">
@@ -194,14 +198,14 @@ function PacketDisclosure({
                 <Badge variant="secondary">{detail.binding.snapshot.method}</Badge>
                 <Badge variant="outline">{detail.binding.snapshot.status}</Badge>
                 <span className="break-all text-muted-foreground">{detail.binding.snapshot.url}</span>
-                <span className="shrink-0 text-muted-foreground">采集时间：{packetCapturedAt(detail.binding.snapshot.captured_at)}</span>
+                <span className="shrink-0 text-muted-foreground">{ui("core.traffic.capturedAt")}{packetCapturedAt(detail.binding.snapshot.captured_at, format.dateTime)}</span>
               </div>
               <div>
-                <p className="mb-1 text-[11px] text-muted-foreground">请求 Request</p>
+                <p className="mb-1 text-[11px] text-muted-foreground">{ui("trafficEvidence.viewer.request")}</p>
                 <HttpCodeBlock raw={packetText(detail, "request")} />
               </div>
               <div>
-                <p className="mb-1 text-[11px] text-muted-foreground">响应 Response</p>
+                <p className="mb-1 text-[11px] text-muted-foreground">{ui("trafficEvidence.viewer.response")}</p>
                 <HttpCodeBlock raw={packetText(detail, "response")} />
               </div>
             </div>
@@ -213,9 +217,10 @@ function PacketDisclosure({
 }
 
 export function FindingReproductionPanel({ finding, contextTask }: { finding: Finding; contextTask?: string }) {
+  const ui = useTranslations();
   const steps = React.useMemo(
-    () => parseSteps(finding.report ?? "", finding.evidence || finding.summary),
-    [finding.evidence, finding.report, finding.summary],
+    () => parseSteps(finding.report ?? "", finding.evidence || finding.summary, { verify: ui("core.reproduction.verify"), noSteps: ui("core.reproduction.noSteps"), process: ui("core.reproduction.process") }),
+    [finding.evidence, finding.report, finding.summary, ui],
   );
   const [traffic, setTraffic] = React.useState<FindingTrafficBinding[] | undefined>(undefined);
   const overviewSections = ["概述", "影响与危害", "受影响范围"]
@@ -245,12 +250,11 @@ export function FindingReproductionPanel({ finding, contextTask }: { finding: Fi
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <CardTitle>复现步骤</CardTitle>
-            <CardDescription>步骤同时展示，数据包默认隐藏；需要核对原始请求时再按步骤展开。</CardDescription>
+            <CardTitle>{ui("core.reproduction.steps")}</CardTitle>
+            <CardDescription>{ui("core.reproduction.stepsHint")}</CardDescription>
           </div>
           <Badge variant={steps.length > 0 ? "secondary" : "outline"}>
-            {steps.length} 个步骤 · {traffic?.length ?? finding.traffic_count ?? 0} 个数据包
-          </Badge>
+            {steps.length} {ui("core.reproduction.stepsUnit")}{traffic?.length ?? finding.traffic_count ?? 0} {ui("core.reproduction.packetsUnit")}</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -262,12 +266,12 @@ export function FindingReproductionPanel({ finding, contextTask }: { finding: Fi
         {steps.map((step, index) => {
           const binding = traffic?.find((item) => item.position === index) ?? traffic?.[index];
           return (
-            <div key={`${step.number}-${step.title}`} className="relative rounded-lg border bg-background p-4">
+            <div key={step.number} className="relative rounded-lg border bg-background p-4">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
                     <Badge variant="outline" className="shrink-0 font-medium">
-                      步骤 {step.number}
+                      {ui("core.reproduction.step")}{step.number}
                     </Badge>
                     <h3 className="min-w-0 break-words font-semibold text-sm leading-5">{step.title}</h3>
                   </div>

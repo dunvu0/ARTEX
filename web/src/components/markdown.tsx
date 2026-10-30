@@ -1,11 +1,12 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { RotateCcwIcon, ZoomInIcon, ZoomOutIcon } from "lucide-react";
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 
@@ -14,6 +15,7 @@ function AuthenticatedImage({
   alt,
   ...props
 }: React.ImgHTMLAttributes<HTMLImageElement>) {
+  const t = useTranslations("reportImages");
   const [objectURL, setObjectURL] = React.useState<string | null>(null);
   const [captureTimestamp, setCaptureTimestamp] = React.useState<string | null>(null);
   const [zoomed, setZoomed] = React.useState(false);
@@ -73,9 +75,9 @@ function AuthenticatedImage({
         type="button"
         className="relative my-2 inline-block max-w-full cursor-zoom-in rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => renderedSrc && setZoomed(true)}
-        aria-label="放大查看报告截图"
+        aria-label={t("open")}
       >
-        <img {...props} src={renderedSrc} alt={alt || "报告截图，点击放大"} />
+        <img {...props} src={renderedSrc} alt={alt || t("previewAlt")} />
         {timestamp}
       </button>
       <Dialog
@@ -89,11 +91,12 @@ function AuthenticatedImage({
           showCloseButton
           className="flex max-h-[96dvh] max-w-[96vw] items-center justify-center overflow-hidden bg-black/85 p-3 backdrop-blur-sm sm:max-w-[96vw]"
         >
+          <DialogTitle className="sr-only">{alt || t("alt")}</DialogTitle>
           <div className="relative flex max-h-[90dvh] max-w-full items-center justify-center overflow-auto">
             <div className="relative inline-block origin-center transition-transform duration-150" style={{ transform: `scale(${zoomScale})` }}>
               <img
                 src={renderedSrc}
-                alt={alt || "报告截图"}
+                alt={alt || t("alt")}
                 className="max-h-[90dvh] max-w-[90vw] rounded-md object-contain"
               />
               {timestamp}
@@ -106,8 +109,8 @@ function AuthenticatedImage({
               className="text-white hover:bg-white/20 hover:text-white"
               onClick={() => setZoomScale((value) => Math.max(0.5, Number((value - 0.25).toFixed(2))))}
               disabled={zoomScale <= 0.5}
-              title="缩小"
-              aria-label="缩小图片"
+              title={t("zoomOut")}
+              aria-label={t("zoomOutLabel")}
             >
               <ZoomOutIcon />
             </Button>
@@ -117,8 +120,8 @@ function AuthenticatedImage({
               className="text-white hover:bg-white/20 hover:text-white"
               onClick={() => setZoomScale(1)}
               disabled={zoomScale === 1}
-              title="重置大小"
-              aria-label="重置图片大小"
+              title={t("reset")}
+              aria-label={t("resetLabel")}
             >
               <RotateCcwIcon />
             </Button>
@@ -128,8 +131,8 @@ function AuthenticatedImage({
               className="text-white hover:bg-white/20 hover:text-white"
               onClick={() => setZoomScale((value) => Math.min(3, Number((value + 0.25).toFixed(2))))}
               disabled={zoomScale >= 3}
-              title="放大"
-              aria-label="放大图片"
+              title={t("zoomIn")}
+              aria-label={t("zoomInLabel")}
             >
               <ZoomInIcon />
             </Button>
@@ -166,7 +169,7 @@ const components: Components = {
         {...p}
         className="my-2 max-h-[520px] max-w-full rounded-md border object-contain"
         src={resolvedSrc}
-        alt={alt || "报告截图"}
+        alt={alt}
         // Report screenshots are evidence and must be fetched while the report is
         // rendered; Edge may replace lazy images with placeholders indefinitely
         // when the markdown section is outside the initial viewport.

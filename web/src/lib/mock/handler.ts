@@ -5,6 +5,7 @@
 import {
   classifyCompanyScopeLine,
   companyScopeRuleError,
+  companyScopeErrorText,
   isCompanyScopeKind,
   normalizeCompanyScopeValue,
 } from "../company-scope";
@@ -1778,7 +1779,7 @@ function route(m: string, path: string, seg: string[], q: URLSearchParams, b: Re
       const rules: CompanyScopeRule[] = b.scope.map((candidate, index) => {
         if (typeof candidate === "string") {
           const issue = classifyCompanyScopeLine(candidate, index + 1);
-          if (!issue.rule || issue.error) throw new Error(`第 ${index + 1} 条范围无效：${issue.error ?? "无法识别"}`);
+          if (!issue.rule || issue.error) throw new Error(`第 ${index + 1} 条范围无效：${companyScopeErrorText(issue.error ?? "无法识别")}`);
           return issue.rule;
         }
         const item = candidate as { kind?: unknown; value?: unknown };

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { parse, TYPE } from "@formatjs/icu-messageformat-parser";
 
@@ -51,6 +52,15 @@ export function checkMessages(chinese, english) {
   return errors;
 }
 
+export function translationDrift(previousChinese, previousEnglish, chinese, english) {
+  const previousZh = flatten(previousChinese);
+  const previousEn = flatten(previousEnglish);
+  const zh = flatten(chinese);
+  const en = flatten(english);
+  return Object.keys(previousZh).filter((key) => key in zh && key in en
+    && previousZh[key] !== zh[key] && previousEn[key] === en[key]);
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const read = (locale) => JSON.parse(readFileSync(new URL(`../messages/${locale}.json`, import.meta.url), "utf8"));
   const errors = checkMessages(read("zh-CN"), read("en"));
@@ -59,5 +69,15 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     process.exitCode = 1;
   } else {
     console.log(`Catalogs OK: ${Object.keys(flatten(read("en"))).length} messages`);
+  }
+  const args = process.argv.slice(2);
+  if (args.length) {
+    if (args.length !== 2 || args[0] !== "--base") throw new Error("Usage: check-messages.mjs [--base <commit>]");
+    const git = (...params) => execFileSync("git", params, { encoding: "utf8" });
+    const base = git("rev-parse", "--verify", "--end-of-options", `${args[1]}^{commit}`).trim();
+    const readPrevious = (locale) => JSON.parse(git("show", `${base}:web/messages/${locale}.json`));
+    const drift = translationDrift(readPrevious("zh-CN"), readPrevious("en"), read("zh-CN"), read("en"));
+    if (drift.length) console.warn(`Review changed Chinese with unchanged English:\n${drift.join("\n")}`);
+    else console.log(`No unchanged-English drift candidates against ${base}`);
   }
 }
