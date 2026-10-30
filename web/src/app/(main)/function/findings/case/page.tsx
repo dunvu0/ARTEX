@@ -135,7 +135,7 @@ function CaseDetail() {
       <Tabs defaultValue="report">
         <TabsList>
           <TabsTrigger value="report">{ui("core.findings.combinedReport")}</TabsTrigger>
-          <TabsTrigger value="members">{ui("core.cases.originalPrefix")}{c.count}）</TabsTrigger>
+          <TabsTrigger value="members">{ui("core.cases.originalCount", { count: c.count })}</TabsTrigger>
           <TabsTrigger value="history">{ui("core.cases.history")}</TabsTrigger>
         </TabsList>
         <TabsContent value="report">
@@ -173,7 +173,7 @@ function CaseDetail() {
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="outline" disabled={busy}>
-                      {ui("core.cases.removeSelectedPrefix")}{selected.size}）
+                      {ui("core.cases.removeSelectedCount", { count: selected.size })}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>

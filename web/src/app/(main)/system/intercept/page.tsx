@@ -52,6 +52,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
+import { useBuiltinRuleLabels } from "@/lib/rule-i18n";
 import type {
   InterceptAction,
   InterceptRule,
@@ -479,6 +480,7 @@ function JudgeCard() {
 // ---- page ----
 
 export default function InterceptPage() {
+  const ruleLabels = useBuiltinRuleLabels();
   const t = useTranslations("interceptPage");
   const messagesRef = React.useRef(t);
   React.useEffect(() => { messagesRef.current = t; }, [t]);
@@ -766,7 +768,7 @@ export default function InterceptPage() {
                     <TableCell>
                       <span className="font-mono text-xs tabular-nums">{rule.priority}</span>
                     </TableCell>
-                    <TableCell className="font-medium text-sm">{rule.name}</TableCell>
+                    <TableCell className="font-medium text-sm">{ruleLabels.name(rule.name)}</TableCell>
                     <TableCell>
                       <span className="text-xs text-muted-foreground">
                         {rule.match_target === "tool_name" ? t("target.tool_name") : t("target.tool_input")}

@@ -30,6 +30,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
+import { useAgentLabels } from "@/lib/agent-i18n";
 import type { Agent, Tool } from "@/lib/types";
 
 // Traffic tools are host tools gated by the global 流量捕获 switch: bindable, but
@@ -151,6 +152,7 @@ function ToolEditor({
 }) {
   // traffic tools can't be bound/enabled until the global 流量捕获 switch is on.
   const t = useTranslations("toolsPage");
+  const agentLabels = useAgentLabels();
   // traffic tools can't be bound/enabled until the global 流量捕获 switch is on.
   const trafficGated = TRAFFIC_TOOL_KEYS.has(tool.key) && !captureOn;
   const [description, setDescription] = React.useState(tool.description);
@@ -213,7 +215,7 @@ function ToolEditor({
                     disabled={trafficGated}
                     onCheckedChange={() => toggleAgent(ag.key)}
                   />
-                  {ag.name}
+                  {agentLabels.name(ag)}
                   <span className="text-muted-foreground font-mono text-xs">{ag.key}</span>
                 </label>
               ))}
@@ -540,6 +542,7 @@ function CustomToolDialog({
 }) {
   const t = useTranslations("toolsPage");
   const isNew = edit === "new";
+  const agentLabels = useAgentLabels();
   const tool = edit && edit !== "new" ? edit : null;
   const [key, setKey] = React.useState("");
   const [description, setDescription] = React.useState("");
@@ -785,7 +788,7 @@ function CustomToolDialog({
               {agents.map((a) => (
                 <label key={a.key} className="flex items-center gap-2 text-sm">
                   <Checkbox checked={bound.includes(a.key)} onCheckedChange={() => toggleAgent(a.key)} />
-                  {a.name}<span className="text-muted-foreground font-mono text-xs">{a.key}</span>
+                  {agentLabels.name(a)}<span className="text-muted-foreground font-mono text-xs">{a.key}</span>
                 </label>
               ))}
             </div>

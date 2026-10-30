@@ -6,6 +6,32 @@ import ts from "typescript";
 import { checkMessages } from "./check-messages.mjs";
 import { inventory } from "./inventory-chinese.mjs";
 
+test("bundled Agent and rule labels cover current backend seeds", () => {
+  const zh = JSON.parse(readFileSync(new URL("../messages/zh-CN.json", import.meta.url), "utf8"));
+  const source = readFileSync(new URL("../../db/db.go", import.meta.url), "utf8");
+  const agents = source.slice(source.indexOf("var builtinAgents ="), source.indexOf("func (d *DB) seedBuiltins()"));
+  const seeds = [...agents.matchAll(/^\t\{"([\w]+)", "([^"]+)", "[^"]+", "([^"]+)"/gm)];
+  assert.ok(seeds.length >= 7);
+  for (const [, key, name, description] of seeds) {
+    assert.equal(zh.builtinAgents[key]?.name, name, `Unreviewed Agent name: ${key}`);
+    assert.equal(zh.builtinAgents[key]?.description, description, `Unreviewed Agent description: ${key}`);
+  }
+  const rules = source.slice(source.indexOf("func (d *DB) seedDefaultInterceptRules()"));
+  const ruleNames = [...rules.matchAll(/(?:name:\s*|const name = )"(\[内置\][^"]+)"/g)].map((match) => match[1]);
+  assert.ok(ruleNames.length >= 18);
+  assert.deepEqual(new Set(Object.values(zh.builtinRules.names)), new Set(ruleNames));
+  const assetNotes = [...source.matchAll(/\{"fuzzy_domain", "[^"]+", "([^"]+)"\}/g)].map((match) => match[1]);
+  assert.equal(assetNotes.length, 4);
+  assert.deepEqual(new Set(Object.values(zh.builtinRules.assetNotes)), new Set(assetNotes));
+  const server = readFileSync(new URL("../../server/server_mgmt.go", import.meta.url), "utf8");
+  const t = createTranslator({ locale: "zh-CN", messages: zh });
+  for (const key of ["Now", "DataDir"]) {
+    const match = server.match(new RegExp(`Name: "${key}", Description: "([^"]+)"`));
+    assert.ok(match);
+    assert.equal(t(`agentEditor.globalVars.${key}`), match[1]);
+  }
+});
+
 test("catalogs reject missing keys, empty values and invalid ICU", () => {
   assert.match(checkMessages({ a: "A" }, {})[0], /Missing key/);
   assert.throws(() => checkMessages({ a: "A" }, { a: " " }), /Empty message/);
@@ -121,7 +147,6 @@ test("task screen permits only reviewed metadata, wire logic, and persisted text
     ["archiveStateLabel", Object.values(zh.taskArchives.states)],
     ["TaskArchivesPanel", ["归档不存在"]],
     ["COMPANY_SCOPE_LABELS", [zh.tasksCreate.scope.domain, zh.tasksCreate.scope.keyword]],
-    ["CreateTaskSheet", ["新建任务计划", "新建任务计划"]],
   ]);
   for (const node of tree.statements) {
     const name = ts.isFunctionDeclaration(node) ? node.name?.text

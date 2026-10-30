@@ -2,9 +2,9 @@ import { expect, type Page, test } from "@playwright/test";
 
 import en from "../messages/en.json";
 import zh from "../messages/zh-CN.json";
-import { settings } from "../src/lib/mock/data";
+import { agents, interceptRules, settings } from "../src/lib/mock/data";
 import { mockHandle } from "../src/lib/mock/handler";
-import type { FindingTraffic } from "../src/lib/types";
+import type { Agent, FindingTraffic } from "../src/lib/types";
 
 declare global {
   interface Window {
@@ -78,6 +78,114 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.afterEach(() => expect(runtimeErrors).toEqual([]));
+
+test("current seeded Agent labels translate in chat and resource bindings", async ({ page }) => {
+  const seeded: Agent[] = Object.entries(zh.builtinAgents).map(([key, labels], index) => ({
+    ...agents[0], id: String(index + 1), key, name: labels.name, description: labels.description,
+    builtin: key !== "retester", role: "assistant",
+  }));
+  const custom = { ...agents[0], id: "99", key: "custom-review", name: raw, description: raw, builtin: false };
+  await page.route("**/api/agents", (route) => route.fulfill({ json: { agents: [...seeded, custom] } }));
+
+  await page.goto("/chat/?c=1");
+  await selectLanguage(page, "en");
+  await expect(page.getByText(en.builtinAgents.mainagent.description, { exact: true })).toBeVisible();
+  const pinned = page.getByRole("button", { name: /^Pinned acme/ });
+  await expect(pinned).toContainText(en.builtinAgents.mainagent.name);
+  await expect(pinned).not.toContainText(zh.builtinAgents.mainagent.name);
+
+  await page.goto("/system/mcp/");
+  await expect(page.getByRole("checkbox", { name: en.builtinAgents.asset_mapper.name, exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: raw, exact: true }).first()).toBeVisible();
+  await selectLanguage(page, "zh-CN");
+  await expect(page.getByRole("checkbox", { name: zh.builtinAgents.asset_mapper.name, exact: true }).first()).toBeVisible();
+  await selectLanguage(page, "en");
+
+  await page.goto("/system/tools/");
+  await page.getByRole("button", { name: /^bash System/ }).click();
+  await expect(page.getByRole("dialog").getByRole("checkbox", { name: `${en.builtinAgents.mainagent.name} mainagent`, exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("checkbox", { name: `${raw} custom-review`, exact: true })).toBeVisible();
+
+  await page.goto("/system/skills/");
+  await page.getByRole("button", { name: en.skillsPage.newSkill, exact: true }).click();
+  await page.getByRole("dialog").getByRole("tab", { name: en.skillsPage.tabVisibility, exact: true }).click();
+  await expect(page.getByRole("dialog").getByRole("checkbox", { name: en.builtinAgents.asset_mapper.name, exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("checkbox", { name: raw, exact: true })).toBeVisible();
+
+  const renamed = seeded.map((agent) => agent.key === "asset_mapper" ? { ...agent, name: raw, description: raw } : agent);
+  await page.route("**/api/agents", (route) => route.fulfill({ json: { agents: renamed } }));
+  await page.goto("/system/agents/");
+  await expect(page.getByRole("button").filter({ hasText: "asset_mapper" })).toContainText(raw);
+  await expect(page.getByText(en.builtinAgents.asset_mapper.description, { exact: true })).toHaveCount(0);
+});
+
+test("unlinked asset groups translate without changing filters or asset names", async ({ page }) => {
+  await page.goto("/function/findings/");
+  await selectLanguage(page, "en");
+  await page.getByRole("tab", { name: en.findings.view.asset, exact: true }).click();
+  const group = page.getByRole("button", { name: en.findings.assetTree.unlinked, exact: true });
+  await expect(group).toBeVisible();
+  const request = page.waitForRequest((r) => new URL(r.url()).searchParams.get("asset_scope") === "__none__");
+  await group.click();
+  await request;
+  await expect(page.getByRole("button", { name: en.findings.assetTree.unlinked, exact: true })).toHaveCount(2);
+  await selectLanguage(page, "zh-CN");
+  await expect(page.getByRole("button", { name: zh.findings.assetTree.unlinked, exact: true })).toHaveCount(2);
+  await selectLanguage(page, "en");
+  await page.getByPlaceholder(en.findings.assetTree.filterPlaceholder).fill("Unlinked");
+  await expect(page.getByRole("button", { name: en.findings.assetTree.unlinked, exact: true })).toHaveCount(2);
+  await page.getByPlaceholder(en.findings.assetTree.filterPlaceholder).fill("");
+  await expect(page.getByRole("button", { name: "Acme Corp", exact: true })).toBeVisible();
+});
+
+test("new task schedule defaults follow locale while edited names and timezone stay fixed", async ({ page }) => {
+  let submitted: Record<string, unknown> | undefined;
+  await page.route("**/api/tasks", async (route) => {
+    if (route.request().method() === "POST") {
+      submitted = route.request().postDataJSON();
+      await route.fulfill({ json: { id: "created-fixture" } });
+    } else {
+      await route.fulfill({ json: await mockHandle("GET", "/tasks") });
+    }
+  });
+  await page.goto("/function/tasks/");
+  await selectLanguage(page, "en");
+  await page.getByRole("button", { name: en.tasksCreate.createTitle, exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("checkbox", { name: en.tasksCreate.scheduleEnable }).check();
+  await expect(dialog.locator("#task-schedule-name")).toHaveValue(en.tasksCreate.defaultScheduleName);
+  await page.locator("select").filter({ has: page.locator('option[value="en"]') }).selectOption("zh-CN", { force: true });
+  await expect(dialog.locator("#task-schedule-name")).toHaveValue(zh.tasksCreate.defaultScheduleName);
+  await dialog.locator("#task-schedule-name").fill(raw);
+  await page.locator("select").filter({ has: page.locator('option[value="en"]') }).selectOption("en", { force: true });
+  await expect(dialog.locator("#task-schedule-name")).toHaveValue(raw);
+  await dialog.getByRole("textbox", { name: en.tasksCreate.description, exact: true }).fill("fixture description");
+  await dialog.getByRole("textbox", { name: en.tasksCreate.goal, exact: true }).fill("fixture goal");
+  await dialog.getByRole("button", { name: en.tasksCreate.create, exact: true }).click();
+  await expect.poll(() => submitted).toBeDefined();
+  expect(submitted?.schedule).toMatchObject({ name: raw, timezone_mode: "beijing", start_time: "18:00", weekdays: [6, 7] });
+});
+
+test("bundled rule labels translate while editable rules and messages remain verbatim", async ({ page }) => {
+  const rule = { ...interceptRules[0], id: 801, name: zh.builtinRules.names.recursiveDelete, action: "deny", message: raw };
+  await page.route("**/api/intercept/rules", (route) => route.fulfill({ json: { rules: [rule] } }));
+  await page.goto("/system/intercept/");
+  await selectLanguage(page, "en");
+  await page.getByRole("row").filter({ has: page.getByRole("cell", { name: en.builtinRules.names.recursiveDelete, exact: true }) }).getByRole("button").first().click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByPlaceholder(en.interceptPage.editor.namePlaceholder)).toHaveValue(rule.name);
+  await expect(dialog.getByPlaceholder(en.interceptPage.editor.denyMessagePlaceholder)).toHaveValue(raw);
+
+  await page.route("**/api/asset-intercept/rules", (route) => route.fulfill({ json: { rules: [
+    { id: 1, enabled: true, kind: "fuzzy_domain", pattern: ".gov", note: zh.builtinRules.assetNotes.government, builtin: true },
+    { id: 2, enabled: true, kind: "exact_domain", pattern: "example.test", note: raw, builtin: false },
+  ] } }));
+  await page.goto("/system/intercept/assets/");
+  await expect(page.getByText(en.builtinRules.assetNotes.government, { exact: true })).toBeVisible();
+  await expect(page.getByText(raw, { exact: true })).toBeVisible();
+  await selectLanguage(page, "zh-CN");
+  await expect(page.getByText(zh.builtinRules.assetNotes.government, { exact: true })).toBeVisible();
+});
 
 test("Chinese default and explicit language preference survive reloads", async ({ page }) => {
   await page.goto("/chat/");

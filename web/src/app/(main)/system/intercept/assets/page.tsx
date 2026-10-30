@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
+import { useBuiltinRuleLabels } from "@/lib/rule-i18n";
 import type { AssetInterceptKind, AssetInterceptRule } from "@/lib/types";
 
 
@@ -88,6 +89,7 @@ function frontValidate(form: RuleForm): "contentRequired" | "cidrInvalid" | null
 // ---- page ----
 
 export default function AssetInterceptPage() {
+  const ruleLabels = useBuiltinRuleLabels();
   const t = useTranslations("assetInterceptPage");
   const messagesRef = React.useRef(t);
   React.useEffect(() => { messagesRef.current = t; }, [t]);
@@ -237,7 +239,7 @@ export default function AssetInterceptPage() {
                             {t("builtin")}
                           </Badge>
                         )}
-                        <span className="truncate">{rule.note}</span>
+                        <span className="truncate">{ruleLabels.assetNote(rule)}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-center">

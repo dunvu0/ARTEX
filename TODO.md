@@ -8,6 +8,8 @@
 - Keep upstream RuoJi6 history and source structure mergeable.
 - Use next-intl and semantic keys; borrow reviewed translations and runtime
   safeguards from artex-global and ScopeWeaver without adopting either fork wholesale.
+- Prefer ScopeWeaver wording for shared pre-Autumn screens, adapted to current
+  behavior; use artex-global as a compatible next-intl implementation reference.
 - Prefer a small, stable system over translating every string automatically.
 - Do not translate agent reasoning prompts, user content, raw HTTP, evidence,
   reports already saved, identifiers, protocol values, or tool payloads.
@@ -45,9 +47,44 @@ there, consult artex-global and ScopeWeaver for translations and implementation
 ideas. Verify them against current source, record reference commits and preserve
 required attribution for copied material. Do not merge unrelated fork features.
 
-The dated batches below are historical records. Their pending items are superseded
-by the Phase 1 and Phase 2 completion records. Phase 4 remains optional and deferred;
+The dated batches below are historical records. Earlier completion claims did
+not cover backend-provided labels or every nested UI state; the browser review
+below corrects those gaps. Phase 4 remains optional and deferred;
 it is not part of the English UI completion scope.
+
+### Browser review after user feedback (2026-10-30)
+
+- [x] Prefer reviewed ScopeWeaver wording for shared screens, preserving semantic
+      keys, ICU arguments, current feature behavior and ARTEX branding.
+- [x] Translate missing seeded Agent labels in MCP/Skills/Tools bindings, pinned
+      chats and chat descriptions; add the current `asset_mapper` seed.
+- [x] Translate Findings' backend-provided unlinked-assets group in the tree,
+      search and breadcrumbs, preserving its filter sentinel and real asset names.
+- [x] Translate unchanged bundled rule names/notes at display time and global
+      prompt-variable help. Rule editors, tool descriptions and prompts stay raw.
+- [x] Localize untouched new-task schedule names; preserve user edits, stored
+      names, timezone choice and schedule payload values.
+- [x] Complete playwright-cli route/tab/dialog review and 15 browser regressions;
+      catalog/ICU checks, 21 unit checks and static export pass.
+- [x] Fix the notification sheet width so English form text fits mobile.
+
+Browser coverage: all 23 sidebar routes; all 12 task-detail tabs; seven asset
+types; four Findings views and three case-detail tabs; LLM retry/rotation,
+interception, notification and tool tabs; all five Settings sections and Agent
+editor tabs. Nested checks include task creation/templates/categories/scheduling,
+asset scope editors, evidence viewer/notes/picker/retest, traffic/LLM details,
+workspace editing, MCP transports, all six notification types, search/preferences,
+password change, login/terms and setup. Mobile checks use 390px and 768px widths;
+desktop uses 1440px. Fixture browser artifacts are in
+`/tmp/artex-wording-review/` for this session.
+
+Review uses the actual static frontend on a loopback fixture server, with existing
+demo data plus current backend seed labels. Notification/intelligence fixtures
+fill API shapes absent from the old demo. The deployed instance requires login;
+its private records were not changed or used as browser review fixtures. Mocked
+UI coverage does not establish live execution, external provider availability,
+real SSE reconnects or persistence. Saved content, prompts, tool schemas, raw
+HTTP/evidence, generated output and uncoded backend errors can remain Chinese.
 
 ### Reference reuse correction (2026-10-30)
 

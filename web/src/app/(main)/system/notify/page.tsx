@@ -419,7 +419,7 @@ export default function NotifyPage() {
       </Tabs>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-full data-[side=right]:sm:max-w-lg">
+        <SheetContent side="right" className="data-[side=right]:w-full data-[side=right]:sm:max-w-lg">
           <SheetHeader>
             <SheetTitle>{editing ? editing.name : t("sheet.addTitle")}</SheetTitle>
             <SheetDescription>

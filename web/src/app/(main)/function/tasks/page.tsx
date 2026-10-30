@@ -3181,8 +3181,9 @@ function CreateTaskSheet({
   const [workerCount, setWorkerCount] = React.useState(""); // 本任务 Worker 数;空/0=用全局默认
   const [interceptRules, setInterceptRules] = React.useState<AssetInterceptRuleInput[]>([]); // 任务级资产拦截规则(仅本任务生效,不进全局表)
   const [scheduleEnabled, setScheduleEnabled] = React.useState(false);
+  const [scheduleNameEdited, setScheduleNameEdited] = React.useState(false);
   const [schedule, setSchedule] = React.useState<ScheduleInput>({
-    name: "新建任务计划",
+    name: "",
     schedule_type: "weekly",
     end_date: "",
     weekdays: [6, 7],
@@ -3265,7 +3266,7 @@ function CreateTaskSheet({
         planHeartbeatSeconds: heartbeatSec,
         coverageEnabled,
         workerCount: workerCountNum,
-        schedule: scheduleEnabled ? { ...schedule, task_ids: [] } : undefined,
+        schedule: scheduleEnabled ? { ...schedule, name: scheduleNameEdited ? schedule.name : t("defaultScheduleName"), task_ids: [] } : undefined,
         interceptRules: interceptRules
           .map((r) => ({ ...r, pattern: r.pattern.trim() }))
           .filter((r) => r.pattern !== ""),
@@ -3287,8 +3288,9 @@ function CreateTaskSheet({
       setWorkerCount("");
       setInterceptRules([]);
       setScheduleEnabled(false);
+      setScheduleNameEdited(false);
       setSchedule({
-        name: "新建任务计划",
+        name: "",
         schedule_type: "weekly",
         end_date: "",
         weekdays: [6, 7],
@@ -3390,8 +3392,11 @@ function CreateTaskSheet({
               {scheduleEnabled && (
                 <FieldGroup className="rounded-lg border p-3">
                   <Field>
-                    <FieldLabel>{t("scheduleName")}</FieldLabel>
-                    <Input value={schedule.name} onChange={(e) => setSchedule({ ...schedule, name: e.target.value })} />
+                    <FieldLabel htmlFor="task-schedule-name">{t("scheduleName")}</FieldLabel>
+                    <Input id="task-schedule-name" value={scheduleNameEdited ? schedule.name : t("defaultScheduleName")} onChange={(e) => {
+                      setScheduleNameEdited(true);
+                      setSchedule({ ...schedule, name: e.target.value });
+                    }} />
                   </Field>
                   <div className="grid grid-cols-2 gap-3">
                     <Field>

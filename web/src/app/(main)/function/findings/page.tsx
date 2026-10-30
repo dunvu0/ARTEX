@@ -813,9 +813,14 @@ export default function FindingsPage() {
   // 平铺与资产视图共用 flat 列表状态,分组视图的口径来自组接口的 finding_total。
   const [caseTotal, setCaseTotal] = React.useState(0);
   const filteredTotal = view === "cases" ? caseTotal : view === "grouped" ? total : flat.total;
+  const unlinkedAssetLabel = t("assetTree.unlinked");
+  const displayAssetNodes = React.useMemo(
+    () => assetTree.nodes.map((node) => node.kind === "none" ? { ...node, label: unlinkedAssetLabel } : node),
+    [assetTree.nodes, unlinkedAssetLabel],
+  );
   const assetPath = React.useMemo(
-    () => (view === "asset" ? assetPathOf(assetTree.nodes, assetScope) : []),
-    [assetScope, assetTree.nodes, view],
+    () => (view === "asset" ? assetPathOf(displayAssetNodes, assetScope) : []),
+    [assetScope, displayAssetNodes, view],
   );
 
   const rowProps = {
@@ -1040,7 +1045,7 @@ export default function FindingsPage() {
                   </div>
                 ) : (
                   <AssetTree
-                    nodes={assetTree.nodes}
+                    nodes={displayAssetNodes}
                     selected={assetScope}
                     onSelect={setAssetScope}
                     loading={assetTree.loading}

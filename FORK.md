@@ -21,8 +21,9 @@ fork requires a separate review of image destinations and deployment settings.
 Follow RuoJi6 directly and keep a small Chinese-default, English-opt-in UI layer.
 ScopeWeaver and artex-global are useful references; adopting either whole fork
 would also couple maintenance to its product, backend, and language decisions.
-For screens inherited from their shared ARTEX source, consult artex-global's
-next-intl components and Chinese/English catalogs first, then ScopeWeaver. Reuse
+For screens inherited from their shared ARTEX source, prefer ScopeWeaver's
+English wording after checking the corresponding Chinese source and behavior.
+Use artex-global's next-intl components as an implementation reference. Reuse
 reviewed translations and compatible localization edits, comparing each fork
 against its own common ancestor and current source. Record reference commits and
 required attribution in LOCALIZATION_SOURCES.md. The earlier batches were written
@@ -138,8 +139,9 @@ Chinese metadata if a newly merged status has no catalog entry. Other callers
 of `statusMeta()` remain Chinese until explicitly migrated with their screens.
 
 Early auth, navigation, dashboard, Settings and task-list batches were written
-against this checkout. Subsequent core screens reuse artex-global translations
-and compatible next-intl edits; selected wording comes from ScopeWeaver. Exact
+against this checkout. Subsequent core screens reused artex-global translations
+and compatible next-intl edits; the current wording review prefers ScopeWeaver
+for shared screens. Exact
 commits, source groups, adaptations and AGPL-3.0 attribution are recorded in
 LOCALIZATION_SOURCES.md. Existing terms and restrictions are preserved
 in both languages. Backend errors, warnings, and skip reasons remain verbatim.
@@ -157,8 +159,9 @@ The browser suite also checks Repeater locale/draft retention, mocked replay,
 history, filtering and storage errors; it does not verify actual backend replay.
 
 The task-list inventory permits original status/company-scope metadata for
-fallback, upload-manifest instructions for workers, the persisted Chinese default
-schedule name, and the existing backend archive-missing message check. These are
+fallback, upload-manifest instructions for workers, and the existing backend
+archive-missing message check. New task schedule names follow the UI locale until
+edited; edited and already saved names remain verbatim. These exceptions are
 explicit exceptions, not translated UI. Browser verification uses mocked APIs;
 live task execution, scheduling, uploads, and SSE still require integration checks.
 

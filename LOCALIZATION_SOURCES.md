@@ -19,6 +19,28 @@ source at those ancestors is identical to `e6ec56999175509551a1e43a3ee3b053d0941
 
 ## Reused material
 
+### Current wording preference (2026-10-30)
+
+ScopeWeaver is the preferred English wording reference for shared pre-Autumn
+screens. The earlier artex-global reuse below remains historical attribution.
+This review adapts ScopeWeaver's `interface`, `common`, `settings`, `app`, and
+`english` messages into existing semantic keys across navigation, tasks, chat,
+findings/evidence, asset management, settings, agents, LLM profiles/retries, MCP,
+skills, tools, notifications, interception, and logs. Its `db/db.go` supplies
+bundled Agent descriptions and rule display labels. Current ARTEX behavior,
+branding, ICU number/plural formatting and context-specific action/status labels
+take precedence when the reference differs. No reference runtime, prompts or
+database seed mutations are imported.
+
+Browser review also fixes labels arriving from the backend: Agent bindings in
+MCP/Skills/Tools, pinned chat labels and descriptions, the new `asset_mapper`,
+the unlinked-assets group and bundled rule labels. Global prompt-variable help
+is UI text; editable prompt/tool descriptions and user-defined metadata stay raw.
+New task schedule names are localized before editing; timezone behavior stays
+upstream-compatible. See TODO.md for tested routes and limits.
+
+### Earlier reuse
+
 artex-global's corresponding frontend files and `web/messages/{zh,en}.json`
 provided localization edits and translations for:
 

@@ -36,6 +36,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useSideQuestions } from "@/hooks/use-side-questions";
 import { useAgentNameByKey } from "@/lib/agent-i18n";
 import { api } from "@/lib/api";
+import { useBuiltinRuleLabels } from "@/lib/rule-i18n";
 import type {
   InterceptAudit,
   InterceptApprovalFilter,
@@ -113,6 +114,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function MatchCell({ row, showReason = true }: { row: InterceptApprovalRow; showReason?: boolean }) {
+  const ruleLabels = useBuiltinRuleLabels();
   const ui = useTranslations();
   const t = useTranslations("approval");
   const reason = row.reason?.replace(/^\[模型\]\s*/, "");
@@ -127,7 +129,7 @@ function MatchCell({ row, showReason = true }: { row: InterceptApprovalRow; show
       ) : decisionSource === "manual" ? (
         <Badge variant="outline">{ui("core.approvals.manual")}</Badge>
       ) : (
-        <span className="truncate">{row.rule_name || t("ruleMissing")}</span>
+        <span className="truncate">{row.rule_name ? ruleLabels.name(row.rule_name) : t("ruleMissing")}</span>
       )}
       {showReason ? (
         <p className="truncate text-muted-foreground text-xs" title={reason}>
@@ -386,6 +388,7 @@ export function ApprovalDetail({
   const ui = useTranslations();
   const t = useTranslations("approval");
   const agentNameOf = useAgentNameByKey();
+  const ruleLabels = useBuiltinRuleLabels();
   const [detail, setDetail] = React.useState<InterceptDetail | null>(null);
   const [rawError, setError] = React.useState<string | null>(null);
   const error = rawError === null ? "" : rawError || t("loadError");
@@ -497,7 +500,7 @@ export function ApprovalDetail({
               {audit?.rule_name ? (
                 <>
                   <dt className="text-muted-foreground">{ui("approval.ruleSnapshot")}</dt>
-                  <dd>{audit.rule_name}</dd>
+                  <dd>{ruleLabels.name(audit.rule_name)}</dd>
                 </>
               ) : null}
               {audit?.profile_id ? (

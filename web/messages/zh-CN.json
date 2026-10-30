@@ -1036,7 +1036,8 @@
     "seedHint": "开启后创建即把「描述+目标」作为一条意图下发，worker 免等首轮规划直接开跑，跑完再由 planner 接手判定/补充。CTF 等常一个 work 直接解决的场景推荐开启；关闭则走标准的先规划再执行。",
     "coverageHint": "默认开启：计算并展示测试覆盖度、态势图显示测试进度、自动累积测试范围。关闭后不再计算/展示覆盖度，态势图仅展示资产不显示进度，agent 也不再获得范围类工具。关闭不影响「关联企业资产范围」。",
     "creating": "创建中",
-    "create": "创建"
+    "create": "创建",
+    "defaultScheduleName": "新建任务计划"
   },
   "taskDetail": {
     "tabs": {
@@ -1550,6 +1551,10 @@
         "toolsNone": "（未选）",
         "message": "消息：{msg}"
       }
+    },
+    "globalVars": {
+      "Now": "服务端当前时间（每次运行实时刷新；可与固定起始时间相减判断已用时长）",
+      "DataDir": "服务端数据根目录（所有任务/会话产物的根；各 agent 实际写盘在其下的子目录，如 '<DataDir>/<taskID>'）"
     }
   },
   "agentsPage": {
@@ -2013,6 +2018,10 @@
     "retester": {
       "name": "漏洞复测",
       "description": "从漏洞详情手动启动，读取原证据并保存独立复测结论。"
+    },
+    "asset_mapper": {
+      "name": "资产梳理",
+      "description": "资产梳理助手：汇总公网、边界与内网资产关系，基于真实资产数据解释入站路径，不凭空推断连接。"
     }
   },
   "chat": {
@@ -2320,7 +2329,8 @@
       "expand": "展开",
       "criticalCount": "严重 {count}",
       "highCount": "高危 {count}",
-      "totalCount": "共 {count} 条发现"
+      "totalCount": "共 {count} 条发现",
+      "unlinked": "未关联资产"
     },
     "detail": {
       "notFound": "未找到发现 {id}",
@@ -4163,7 +4173,6 @@
       "back": "返回漏洞列表",
       "dissolved": "此文件夹已解散或并入其他组，原始记录仍可从漏洞列表查看。",
       "inherited": "继承任务的漏洞组，只读。",
-      "originalPrefix": "原始上报（",
       "history": "归并历史",
       "reportTitle": "完整复现与修复报告",
       "reportDescription": "集中查看所有成员的复现步骤、证据与修复建议。",
@@ -4172,7 +4181,6 @@
       "noReport": "统一报告尚未生成，原始报告可在“原始上报”中查看。",
       "keepOriginal": "原始报告和证据完整保留",
       "originalDescription": "各条原始上报保留各自的等级、报告和证据。",
-      "removeSelectedPrefix": "移出所选（",
       "removeTitle": "移出归并组？",
       "removeDescription": "原报告和证据保留，Agent 不会自动把这些关系再次归并。",
       "remove": "移出",
@@ -4188,7 +4196,9 @@
       "selectReport": "选择上报 #{id}",
       "includeReport": "归并时包含上报 #{id}",
       "confirmSelected": "确认归并所选（{count} 条）",
-      "originalMembers": "{title}的原始子报告"
+      "originalMembers": "{title}的原始子报告",
+      "originalCount": "原始上报（{count}）",
+      "removeSelectedCount": "移出所选（{count}）"
     }
   },
   "metadata": {
@@ -4477,6 +4487,36 @@
       "weekdaysRequired": "按周计划至少选择一天",
       "taskIdsInvalid": "绑定任务编号无效或重复",
       "tooManyTasks": "最多选择{limit, number}个任务"
+    }
+  },
+  "builtinRules": {
+    "names": {
+      "recursiveDelete": "[内置] 递归强制删除 rm -rf",
+      "criticalDirectories": "[内置] 删除系统关键目录",
+      "formatDisk": "[内置] 磁盘格式化 mkfs",
+      "overwriteDisk": "[内置] 覆写磁盘设备 dd",
+      "forkBomb": "[内置] Fork 炸弹",
+      "shutdown": "[内置] 关机 / 重启",
+      "killProcesses": "[内置] 杀死全部进程",
+      "wipeDisk": "[内置] 磁盘擦除 shred / wipe",
+      "flushFirewall": "[内置] 清空防火墙规则",
+      "sqlDrop": "[内置] SQL DROP DATABASE / TABLE / SCHEMA",
+      "sqlTruncate": "[内置] SQL TRUNCATE",
+      "mongoDrop": "[内置] MongoDB drop / dropDatabase",
+      "redisFlush": "[内置] Redis FLUSHALL / FLUSHDB",
+      "httpDelete": "[内置] curl / wget 发送 DELETE 请求",
+      "pythonDelete": "[内置] Python HTTP 客户端 DELETE（requests/httpx/aiohttp）",
+      "scriptDelete": "[内置] 脚本中声明 HTTP DELETE 方法（JS/通用）",
+      "bulkPurge": "[内置] 批量清空 / 清除接口路径",
+      "deleteEndpoint": "[内置] 删除类接口路径",
+      "legacyDestructive": "[内置] 破坏性系统命令",
+      "legacyExfiltration": "[内置] 数据外泄管道"
+    },
+    "assetNotes": {
+      "government": "[内置] 政府网站 (.gov)",
+      "governmentCN": "[内置] 政府网站 (.gov.cn)",
+      "education": "[内置] 教育网站 (.edu)",
+      "educationCN": "[内置] 教育网站 (.edu.cn)"
     }
   }
 }

@@ -390,7 +390,9 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
                     </button>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p className="font-medium">{agentLabels.varLabel(agentKey, !!detail?.agent?.builtin, v.name, v.description)}</p>
+                    <p className="font-medium">{v.name === "Now" || v.name === "DataDir"
+                      ? tr(`globalVars.${v.name}`)
+                      : agentLabels.varLabel(agentKey, !!detail?.agent?.builtin, v.name, v.description)}</p>
                     <p className="text-muted-foreground mt-1">{tr("prompt.example", { example: v.example })}</p>
                   </TooltipContent>
                 </Tooltip>
